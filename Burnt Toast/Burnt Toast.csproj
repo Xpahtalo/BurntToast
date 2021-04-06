@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <RootNamespace>Burnt_Toast</RootNamespace>
+        <Nullable>enable</Nullable>
+        <Version>1.0.0</Version>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="Dalamud, Version=5.2.4.5, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\Dalamud\bin\Dalamud.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="ImGui.NET, Version=1.72.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\Dalamud\bin\ImGui.NET.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="ImGuiScene, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\Dalamud\bin\ImGuiScene.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="DalamudPackager" Version="1.2.1" />
+    </ItemGroup>
+
+</Project>
