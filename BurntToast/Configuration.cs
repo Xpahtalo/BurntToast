@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using Dalamud.Configuration;
 
-namespace Burnt_Toast {
+namespace BurntToast {
     public class Configuration : IPluginConfiguration {
         private BurntToast Plugin { get; set; } = null!;
 

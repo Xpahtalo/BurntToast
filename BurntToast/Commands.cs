@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Dalamud.Game.Command;
 
-namespace Burnt_Toast {
+namespace BurntToast {
     public class Commands : IDisposable {
         private static readonly Dictionary<string, string> CommandList = new Dictionary<string, string>() {
             ["/burnttoast"] = "Opens the configuration for Burnt Toast",

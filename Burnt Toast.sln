@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Burnt Toast", "Burnt Toast\Burnt Toast.csproj", "{5CE2DA47-46A2-461F-8F58-B104451F52CF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BurntToast", "BurntToast\BurntToast.csproj", "{5CE2DA47-46A2-461F-8F58-B104451F52CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,7 +1,7 @@
 ﻿using System;
 using Dalamud.Plugin;
 
-namespace Burnt_Toast {
+namespace BurntToast {
     public class BurntToast : IDalamudPlugin {
         public string Name => "Burnt Toast";
 

@@ -2,7 +2,7 @@
 using System.Linq;
 using Dalamud.Game.Text.SeStringHandling;
 
-namespace Burnt_Toast {
+namespace BurntToast {
     public class Filter : IDisposable {
         private BurntToast Plugin { get; }
 

@@ -2,7 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>net48</TargetFramework>
-        <RootNamespace>Burnt_Toast</RootNamespace>
+        <RootNamespace>BurntToast</RootNamespace>
+        <AssemblyName>BurntToast</AssemblyName>
         <Nullable>enable</Nullable>
         <Version>1.0.0</Version>
         <LangVersion>latest</LangVersion>

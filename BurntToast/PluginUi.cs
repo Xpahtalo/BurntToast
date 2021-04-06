@@ -3,7 +3,7 @@ using System.Numerics;
 using System.Text.RegularExpressions;
 using ImGuiNET;
 
-namespace Burnt_Toast {
+namespace BurntToast {
     public class PluginUi : IDisposable {
         private BurntToast Plugin { get; }
 
