@@ -46,6 +46,28 @@ namespace BurntToast {
                 return;
             }
 
+            if (!ImGui.BeginTabBar("burnt-toast-tabs")) {
+                return;
+            }
+
+            if (ImGui.BeginTabItem("Toasts")) {
+                this.DrawToastTab();
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Battle talk")) {
+                this.DrawBattleTalkTab();
+                ImGui.EndTabItem();
+            }
+
+            ImGui.EndTabBar();
+
+
+
+            ImGui.End();
+        }
+
+        private void DrawToastTab() {
             ImGui.PushTextWrapPos();
             ImGui.TextUnformatted("Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
             ImGui.PopTextWrapPos();
@@ -96,8 +118,66 @@ namespace BurntToast {
             if (toRemove != null) {
                 this.Plugin.Config.Patterns.RemoveAt(toRemove.Value);
             }
+        }
 
-            ImGui.End();
+        private void DrawBattleTalkTab() {
+            ImGui.PushTextWrapPos();
+            ImGui.TextUnformatted("Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
+            ImGui.PopTextWrapPos();
+
+            if (ImGui.Button("Add")) {
+                this.Plugin.Config.BattleTalkPatterns.Add(new BattleTalkPattern(new Regex(""), true));
+            }
+
+            ImGui.Separator();
+
+            int? toRemove = null;
+
+            for (var i = 0; i < this.Plugin.Config.BattleTalkPatterns.Count; i++) {
+                var pattern = this.Plugin.Config.BattleTalkPatterns[i];
+                var patternText = pattern.Pattern.ToString();
+                var textResult = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
+
+                ImGui.SameLine();
+                var show = pattern.ShowMessage;
+                if (ImGui.Checkbox("Show in chat", ref show)) {
+                    pattern.ShowMessage = show;
+                    this.Plugin.Config.Save();
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button($"Delete##{i}")) {
+                    toRemove = i;
+                }
+
+                if (!textResult) {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(patternText)) {
+                    continue;
+                }
+
+                Regex? regex = null;
+                try {
+                    regex = new Regex(patternText, RegexOptions.Compiled);
+                } catch (ArgumentException) {
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
+                    ImGui.TextUnformatted("Invalid regular expression.");
+                    ImGui.PopStyleColor();
+                }
+
+                if (regex == null) {
+                    continue;
+                }
+
+                pattern.Pattern = regex;
+                this.Plugin.Config.Save();
+            }
+
+            if (toRemove != null) {
+                this.Plugin.Config.BattleTalkPatterns.RemoveAt(toRemove.Value);
+            }
         }
     }
 }
