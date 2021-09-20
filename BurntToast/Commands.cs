@@ -14,16 +14,16 @@ namespace BurntToast {
         internal Commands(BurntToast plugin) {
             this.Plugin = plugin;
 
-            foreach (var entry in CommandList) {
-                this.Plugin.Interface.CommandManager.AddHandler(entry.Key, new CommandInfo(this.OnCommand) {
-                    HelpMessage = entry.Value,
+            foreach (var (name, desc) in CommandList) {
+                this.Plugin.CommandManager.AddHandler(name, new CommandInfo(this.OnCommand) {
+                    HelpMessage = desc,
                 });
             }
         }
 
         public void Dispose() {
             foreach (var name in CommandList.Keys) {
-                this.Plugin.Interface.CommandManager.RemoveHandler(name);
+                this.Plugin.CommandManager.RemoveHandler(name);
             }
         }
 

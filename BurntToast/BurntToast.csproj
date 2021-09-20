@@ -1,34 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net48</TargetFramework>
+        <TargetFramework>net5-windows</TargetFramework>
         <RootNamespace>BurntToast</RootNamespace>
         <AssemblyName>BurntToast</AssemblyName>
         <Nullable>enable</Nullable>
         <Version>1.2.1</Version>
         <LangVersion>latest</LangVersion>
+        <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <Dalamud>$(AppData)\XIVLauncher\addon\Hooks\dev</Dalamud>
     </PropertyGroup>
 
     <ItemGroup>
         <Reference Include="Dalamud">
-            <HintPath>D:\code\Dalamud\bin\Dalamud.dll</HintPath>
+            <HintPath>$(Dalamud)\Dalamud.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGui.NET">
-            <HintPath>D:\code\Dalamud\bin\ImGui.NET.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
-        <Reference Include="ImGuiScene">
-            <HintPath>D:\code\Dalamud\bin\ImGuiScene.dll</HintPath>
+            <HintPath>$(Dalamud)\ImGui.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="DalamudPackager" Version="1.2.1"/>
-        <PackageReference Include="Fody" Version="6.5.1" PrivateAssets="all"/>
-        <PackageReference Include="ILMerge.Fody" Version="1.16.0" PrivateAssets="all"/>
-        <PackageReference Include="XivCommon" Version="1.2.0"/>
+        <PackageReference Include="DalamudLinter" Version="1.0.3"/>
+        <PackageReference Include="DalamudPackager" Version="2.1.2"/>
+        <PackageReference Include="XivCommon" Version="3.0.2"/>
     </ItemGroup>
 
 </Project>

@@ -17,20 +17,20 @@ namespace BurntToast {
         public PluginUi(BurntToast plugin) {
             this.Plugin = plugin;
 
-            this.Plugin.Interface.UiBuilder.OnBuildUi += this.Draw;
-            this.Plugin.Interface.UiBuilder.OnOpenConfigUi += this.OnOpenConfig;
+            this.Plugin.Interface.UiBuilder.Draw += this.Draw;
+            this.Plugin.Interface.UiBuilder.OpenConfigUi += this.OnOpenConfig;
         }
 
         public void Dispose() {
-            this.Plugin.Interface.UiBuilder.OnOpenConfigUi -= this.OnOpenConfig;
-            this.Plugin.Interface.UiBuilder.OnBuildUi -= this.Draw;
+            this.Plugin.Interface.UiBuilder.OpenConfigUi -= this.OnOpenConfig;
+            this.Plugin.Interface.UiBuilder.Draw -= this.Draw;
         }
 
         internal void ToggleConfig() {
             this.ShowSettings = !this.ShowSettings;
         }
 
-        private void OnOpenConfig(object? sender, EventArgs e) {
+        private void OnOpenConfig() {
             this.ShowSettings = true;
         }
 

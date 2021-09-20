@@ -1,26 +1,39 @@
-﻿using Dalamud.Plugin;
+﻿using Dalamud.Game.Command;
+using Dalamud.Game.Gui;
+using Dalamud.Game.Gui.Toast;
+using Dalamud.IoC;
+using Dalamud.Plugin;
 using XivCommon;
 
 namespace BurntToast {
     public class BurntToast : IDalamudPlugin {
         public string Name => "Burnt Toast";
 
-        internal DalamudPluginInterface Interface { get; private set; } = null!;
-        internal Configuration Config { get; private set; } = null!;
-        internal PluginUi Ui { get; private set; } = null!;
-        internal XivCommonBase Common { get; private set; } = null!;
-        private Commands Commands { get; set; } = null!;
-        private Filter Filter { get; set; } = null!;
+        [PluginService]
+        internal DalamudPluginInterface Interface { get; private init; } = null!;
 
-        public void Initialize(DalamudPluginInterface pluginInterface) {
-            this.Interface = pluginInterface;
+        [PluginService]
+        internal ChatGui ChatGui { get; private init; } = null!;
 
+        [PluginService]
+        internal CommandManager CommandManager { get; private init; } = null!;
+
+        [PluginService]
+        internal ToastGui ToastGui { get; private init; } = null!;
+
+        internal Configuration Config { get; }
+        internal PluginUi Ui { get; }
+        internal XivCommonBase Common { get; }
+        private Commands Commands { get; }
+        private Filter Filter { get; }
+
+        public BurntToast() {
             this.Config = this.Interface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Config.Initialise(this);
 
             this.Ui = new PluginUi(this);
             this.Commands = new Commands(this);
-            this.Common = new XivCommonBase(this.Interface, Hooks.BattleTalk);
+            this.Common = new XivCommonBase(Hooks.BattleTalk);
             this.Filter = new Filter(this);
         }
 

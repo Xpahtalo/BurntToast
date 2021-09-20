@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Dalamud.Game.Internal.Gui.Toast;
+using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using XivCommon.Functions;
@@ -12,17 +12,17 @@ namespace BurntToast {
         internal Filter(BurntToast plugin) {
             this.Plugin = plugin;
 
-            this.Plugin.Interface.Framework.Gui.Toast.OnToast += this.OnToast;
-            this.Plugin.Interface.Framework.Gui.Toast.OnQuestToast += this.OnQuestToast;
-            this.Plugin.Interface.Framework.Gui.Toast.OnErrorToast += this.OnErrorToast;
+            this.Plugin.ToastGui.Toast += this.OnToast;
+            this.Plugin.ToastGui.QuestToast += this.OnQuestToast;
+            this.Plugin.ToastGui.ErrorToast += this.OnErrorToast;
             this.Plugin.Common.Functions.BattleTalk.OnBattleTalk += this.OnBattleTalk;
         }
 
         public void Dispose() {
             this.Plugin.Common.Functions.BattleTalk.OnBattleTalk -= this.OnBattleTalk;
-            this.Plugin.Interface.Framework.Gui.Toast.OnErrorToast -= this.OnErrorToast;
-            this.Plugin.Interface.Framework.Gui.Toast.OnQuestToast -= this.OnQuestToast;
-            this.Plugin.Interface.Framework.Gui.Toast.OnToast -= this.OnToast;
+            this.Plugin.ToastGui.ErrorToast -= this.OnErrorToast;
+            this.Plugin.ToastGui.QuestToast -= this.OnQuestToast;
+            this.Plugin.ToastGui.Toast -= this.OnToast;
         }
 
         private bool AnyMatches(string text) {
@@ -65,10 +65,10 @@ namespace BurntToast {
             isHandled = true;
 
             if (pattern.ShowMessage) {
-                this.Plugin.Interface.Framework.Gui.Chat.PrintChat(new XivChatEntry {
+                this.Plugin.ChatGui.PrintChat(new XivChatEntry {
                     Type = (XivChatType) 68,
                     Name = sender.TextValue,
-                    MessageBytes = message.Encode(),
+                    Message = message,
                 });
             }
         }
