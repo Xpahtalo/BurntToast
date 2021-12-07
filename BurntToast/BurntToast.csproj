@@ -25,8 +25,8 @@
 
     <ItemGroup>
         <PackageReference Include="DalamudLinter" Version="1.0.3"/>
-        <PackageReference Include="DalamudPackager" Version="2.1.2"/>
-        <PackageReference Include="XivCommon" Version="3.0.2"/>
+        <PackageReference Include="DalamudPackager" Version="2.1.5"/>
+        <PackageReference Include="XivCommon" Version="4.0.0-alpha.1"/>
     </ItemGroup>
 
 </Project>
