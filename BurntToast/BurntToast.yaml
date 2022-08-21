@@ -1,4 +1,6 @@
 ﻿name: Burnt Toast
 author: ascclemens
+punchline: Hides toast notifications you don't want to see.
 description: Hides toast notifications you don't want to see.
 repo_url: https://git.annaclemens.io/ascclemens/BurntToast
+dalamud_api_level: 7
