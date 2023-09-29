@@ -1,25 +1,23 @@
-﻿using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
-using Dalamud.Game.Gui.Toast;
-using Dalamud.IoC;
+﻿using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using XivCommon;
 
 namespace BurntToast {
     public class BurntToast : IDalamudPlugin {
-        public string Name => "Burnt Toast";
+        internal static string Name => "Burnt Toast";
 
         [PluginService]
         internal DalamudPluginInterface Interface { get; private init; } = null!;
 
         [PluginService]
-        internal ChatGui ChatGui { get; private init; } = null!;
+        internal IChatGui ChatGui { get; private init; } = null!;
 
         [PluginService]
-        internal CommandManager CommandManager { get; private init; } = null!;
+        internal ICommandManager CommandManager { get; private init; } = null!;
 
         [PluginService]
-        internal ToastGui ToastGui { get; private init; } = null!;
+        internal IToastGui ToastGui { get; private init; } = null!;
 
         internal Configuration Config { get; }
         internal PluginUi Ui { get; }

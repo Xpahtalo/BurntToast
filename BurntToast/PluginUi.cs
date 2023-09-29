@@ -41,7 +41,7 @@ namespace BurntToast {
 
             ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
 
-            if (!ImGui.Begin($"{this.Plugin.Name} settings", ref this._showSettings)) {
+            if (!ImGui.Begin($"{BurntToast.Name} settings", ref this._showSettings)) {
                 ImGui.End();
                 return;
             }

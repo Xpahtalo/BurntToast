@@ -65,7 +65,7 @@ namespace BurntToast {
             isHandled = true;
 
             if (pattern.ShowMessage) {
-                this.Plugin.ChatGui.PrintChat(new XivChatEntry {
+                this.Plugin.ChatGui.Print(new XivChatEntry {
                     Type = (XivChatType) 68,
                     Name = sender.TextValue,
                     Message = message,
