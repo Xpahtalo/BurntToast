@@ -31,7 +31,7 @@ namespace BurntToast {
 
             this.Ui = new PluginUi(this);
             this.Commands = new Commands(this);
-            this.Common = new XivCommonBase(Hooks.BattleTalk);
+            this.Common = new XivCommonBase(this.Interface, Hooks.BattleTalk);
             this.Filter = new Filter(this);
         }
 
