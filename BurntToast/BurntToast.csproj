@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7-windows</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <RootNamespace>BurntToast</RootNamespace>
         <AssemblyName>BurntToast</AssemblyName>
         <Nullable>enable</Nullable>
-        <Version>1.2.8</Version>
-        <LangVersion>latest</LangVersion>
+        <Version>1.2.9</Version>
+        <LangVersion>12</LangVersion>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>

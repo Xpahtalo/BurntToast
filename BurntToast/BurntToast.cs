@@ -8,16 +8,16 @@ namespace BurntToast {
         internal static string Name => "Burnt Toast";
 
         [PluginService]
-        internal DalamudPluginInterface Interface { get; private init; } = null!;
+        internal DalamudPluginInterface Interface { get; private init; }
 
         [PluginService]
-        internal IChatGui ChatGui { get; private init; } = null!;
+        internal IChatGui ChatGui { get; private init; }
 
         [PluginService]
-        internal ICommandManager CommandManager { get; private init; } = null!;
+        internal ICommandManager CommandManager { get; private init; }
 
         [PluginService]
-        internal IToastGui ToastGui { get; private init; } = null!;
+        internal IToastGui ToastGui { get; private init; }
 
         internal Configuration Config { get; }
         internal PluginUi Ui { get; }
