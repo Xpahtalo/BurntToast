@@ -2,33 +2,33 @@
 using System.Collections.Generic;
 using Dalamud.Game.Command;
 
-namespace BurntToast {
-    public class Commands : IDisposable {
-        private static readonly Dictionary<string, string> CommandList = new Dictionary<string, string>() {
-            ["/burnttoast"] = "Opens the configuration for Burnt Toast",
-            ["/bt"] = "Alias for /burnttoast",
-        };
+namespace BurntToast;
 
-        private BurntToast Plugin { get; }
+public class Commands : IDisposable {
+    private static readonly Dictionary<string, string> CommandList = new() {
+        ["/burnttoast"] = "Opens the configuration for Burnt Toast",
+        ["/bt"]         = "Alias for /burnttoast",
+    };
 
-        internal Commands(BurntToast plugin) {
-            this.Plugin = plugin;
+    internal Commands(BurntToast plugin) {
+        Plugin = plugin;
 
-            foreach (var (name, desc) in CommandList) {
-                this.Plugin.CommandManager.AddHandler(name, new CommandInfo(this.OnCommand) {
-                    HelpMessage = desc,
-                });
-            }
+        foreach (var (name, desc) in CommandList) {
+            Plugin.CommandManager.AddHandler(name, new CommandInfo(OnCommand) {
+                HelpMessage = desc,
+            });
         }
+    }
 
-        public void Dispose() {
-            foreach (var name in CommandList.Keys) {
-                this.Plugin.CommandManager.RemoveHandler(name);
-            }
-        }
+    private BurntToast Plugin { get; }
 
-        private void OnCommand(string command, string arguments) {
-            this.Plugin.Ui.ToggleConfig();
+    public void Dispose() {
+        foreach (var name in CommandList.Keys) {
+            Plugin.CommandManager.RemoveHandler(name);
         }
+    }
+
+    private void OnCommand(string command, string arguments) {
+        Plugin.Ui.ToggleConfig();
     }
 }

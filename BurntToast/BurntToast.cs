@@ -3,43 +3,39 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using XivCommon;
 
-namespace BurntToast {
-    public class BurntToast : IDalamudPlugin {
-        internal static string Name => "Burnt Toast";
+namespace BurntToast;
 
-        [PluginService]
-        internal DalamudPluginInterface Interface { get; private init; }
+public class BurntToast : IDalamudPlugin {
+    public BurntToast() {
+        Config = Interface.GetPluginConfig() as Configuration ?? new Configuration();
+        Config.Initialise(this);
 
-        [PluginService]
-        internal IChatGui ChatGui { get; private init; }
+        Ui       = new PluginUi(this);
+        Commands = new Commands(this);
+        Common   = new XivCommonBase(Interface, Hooks.BattleTalk);
+        Filter   = new Filter(this);
+    }
 
-        [PluginService]
-        internal ICommandManager CommandManager { get; private init; }
+    internal static string Name => "Burnt Toast";
 
-        [PluginService]
-        internal IToastGui ToastGui { get; private init; }
+    [PluginService] internal DalamudPluginInterface Interface { get; }
 
-        internal Configuration Config { get; }
-        internal PluginUi Ui { get; }
-        internal XivCommonBase Common { get; }
-        private Commands Commands { get; }
-        private Filter Filter { get; }
+    [PluginService] internal IChatGui ChatGui { get; }
 
-        public BurntToast() {
-            this.Config = this.Interface.GetPluginConfig() as Configuration ?? new Configuration();
-            this.Config.Initialise(this);
+    [PluginService] internal ICommandManager CommandManager { get; }
 
-            this.Ui = new PluginUi(this);
-            this.Commands = new Commands(this);
-            this.Common = new XivCommonBase(this.Interface, Hooks.BattleTalk);
-            this.Filter = new Filter(this);
-        }
+    [PluginService] internal IToastGui ToastGui { get; }
 
-        public void Dispose() {
-            this.Filter.Dispose();
-            this.Common.Dispose();
-            this.Commands.Dispose();
-            this.Ui.Dispose();
-        }
+    internal Configuration Config   { get; }
+    internal PluginUi      Ui       { get; }
+    internal XivCommonBase Common   { get; }
+    private  Commands      Commands { get; }
+    private  Filter        Filter   { get; }
+
+    public void Dispose() {
+        Filter.Dispose();
+        Common.Dispose();
+        Commands.Dispose();
+        Ui.Dispose();
     }
 }
