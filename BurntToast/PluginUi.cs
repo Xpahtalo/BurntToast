@@ -1,51 +1,19 @@
 ﻿using System;
+using System.Globalization;
+using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using Dalamud.Interface.Windowing;
 using ImGuiNET;
 
 namespace BurntToast;
 
-public class PluginUi : IDisposable {
-    private bool _showSettings;
+public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings") {
+    private BurntToast Plugin { get; } = plugin;
 
-    public PluginUi(BurntToast plugin) {
-        Plugin = plugin;
 
-        Plugin.Interface.UiBuilder.Draw         += Draw;
-        Plugin.Interface.UiBuilder.OpenConfigUi += OnOpenConfig;
-    }
-
-    private BurntToast Plugin { get; }
-
-    private bool ShowSettings {
-        get => _showSettings;
-        set => _showSettings = value;
-    }
-
-    public void Dispose() {
-        Plugin.Interface.UiBuilder.OpenConfigUi -= OnOpenConfig;
-        Plugin.Interface.UiBuilder.Draw         -= Draw;
-    }
-
-    internal void ToggleConfig() {
-        ShowSettings = !ShowSettings;
-    }
-
-    private void OnOpenConfig() {
-        ShowSettings = true;
-    }
-
-    private void Draw() {
-        if (!ShowSettings) {
-            return;
-        }
-
+    public override void Draw() {
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
-
-        if (!ImGui.Begin($"{BurntToast.Name} settings", ref _showSettings)) {
-            ImGui.End();
-            return;
-        }
 
         if (!ImGui.BeginTabBar("burnt-toast-tabs")) {
             return;
@@ -62,9 +30,6 @@ public class PluginUi : IDisposable {
         }
 
         ImGui.EndTabBar();
-
-
-        ImGui.End();
     }
 
     private void DrawToastTab() {
@@ -184,5 +149,102 @@ public class PluginUi : IDisposable {
             Plugin.Config.BattleTalkPatterns.RemoveAt(toRemove.Value);
             Plugin.Config.Save();
         }
+    }
+}
+
+public sealed class HistoryUi(BurntToast plugin, SettingsUi settingsUi) : Window("Toast History") {
+    private static readonly Vector4    Passed            = new(0f, 1f, 0f, 1f);
+    private static readonly Vector4    HandledExternally = new(1f, 1f, 0f, 1f);
+    private static readonly Vector4    Blocked           = new(1f, 0f, 0f, 1f);
+    private                 BurntToast Plugin         { get; } = plugin;
+    private                 SettingsUi SettingsWindow { get; } = settingsUi;
+
+    public override void Draw() {
+        ImGui.PushTextWrapPos();
+
+        ImGui.TextUnformatted("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
+        if (ImGui.IsItemHovered()) {
+            ImGui.BeginTooltip();
+            ColorEntry("Displayed.",                                 Passed);
+            ColorEntry("Ignored because another plugin handled it.", HandledExternally);
+            ColorEntry("Blocked",                                    Blocked);
+            ImGui.EndTooltip();
+        }
+
+        ImGui.PopTextWrapPos();
+
+        ImGui.Separator();
+
+        ImGui.BeginTabBar("burnt-toast-history-tabs");
+
+        if (ImGui.BeginTabItem("Toasts")) {
+            DrawToastHistory();
+            ImGui.EndTabItem();
+        }
+
+        if (ImGui.BeginTabItem("Battle Talk")) {
+            DrawBattleTalkHistory();
+            ImGui.EndTabItem();
+        }
+
+        ImGui.EndTabBar();
+    }
+
+    public void DrawToastHistory() {
+        ImGui.PushTextWrapPos();
+        foreach (var (toast, i) in Plugin.ToastHistory.Select((x, i) => (x, i))) {
+            ImGui.PushID(i);
+            DrawHistoryEntry(toast);
+            ImGui.PopID();
+        }
+
+        ImGui.PopTextWrapPos();
+    }
+
+    public void DrawBattleTalkHistory() {
+        ImGui.PushTextWrapPos();
+        foreach (var (toast, i) in Plugin.BattleTalkHistory.Select((x, i) => (x, i))) {
+            ImGui.PushID(i);
+            DrawHistoryEntry(toast);
+            ImGui.PopID();
+        }
+
+        ImGui.PopTextWrapPos();
+    }
+
+    private void DrawHistoryEntry(HistoryEntry entry) {
+        var color = entry.HandledType switch {
+            HandledType.HandledExternally => HandledExternally,
+            HandledType.Blocked           => Blocked,
+            _                             => Passed,
+        };
+
+        ColorEntry(entry.Text, color);
+
+        if (ImGui.IsItemClicked() && (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl))) {
+            if (entry.Type == HistoryType.Toast) {
+                Plugin.Config.BattleTalkPatterns.Add(new BattleTalkPattern(new Regex(Regex.Escape(entry.Text)), true));
+            }
+
+            if (entry.Type == HistoryType.Toast) {
+                Plugin.Config.Patterns.Add(new Regex(Regex.Escape(entry.Text)));
+            }
+        }
+
+        if (ImGui.IsItemHovered()) {
+            ImGui.BeginTooltip();
+            ImGui.TextUnformatted(entry.Timestamp.ToLocalTime().ToString(CultureInfo.CurrentCulture));
+            if (entry.HandledType == HandledType.Blocked) {
+                ImGui.TextUnformatted($"Blocked by: {entry.Regex}");
+            }
+
+            ImGui.EndTooltip();
+        }
+    }
+
+    private static void ColorEntry(string text, Vector4 color) {
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.TextUnformatted(text);
+        ImGui.PopStyleColor();
     }
 }

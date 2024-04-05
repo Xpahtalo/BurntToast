@@ -5,30 +5,45 @@ using Dalamud.Game.Command;
 namespace BurntToast;
 
 public class Commands : IDisposable {
-    private static readonly Dictionary<string, string> CommandList = new() {
-        ["/burnttoast"] = "Opens the configuration for Burnt Toast",
-        ["/bt"]         = "Alias for /burnttoast",
-    };
-
     internal Commands(BurntToast plugin) {
         Plugin = plugin;
 
-        foreach (var (name, desc) in CommandList) {
-            Plugin.CommandManager.AddHandler(name, new CommandInfo(OnCommand) {
-                HelpMessage = desc,
+        CommandList = new List<Command> {
+            new("/burnttoast", "Opens the configuration for Burnt Toast", ToggleSettings),
+            new("/burnttoasthistory", "Opens the toast history window", ToggleHistory),
+            new("/bt", "Alias for /burnttoast", ToggleSettings),
+            new("/bth", "Alias for /burnttoasthistory", ToggleHistory),
+        };
+        foreach (var command in CommandList) {
+            Plugin.Log.Debug("Adding command {0} with the description {1}", command.Name, command.Description);
+            Plugin.CommandManager.AddHandler(command.Name, new CommandInfo(OnCommand) {
+                HelpMessage = command.Description,
             });
         }
     }
 
+    private List<Command> CommandList { get; }
+
     private BurntToast Plugin { get; }
 
     public void Dispose() {
-        foreach (var name in CommandList.Keys) {
-            Plugin.CommandManager.RemoveHandler(name);
+        foreach (var command in CommandList) {
+            Plugin.Log.Debug("Removing command {0}", command.Name);
+            Plugin.CommandManager.RemoveHandler(command.Name);
         }
     }
 
     private void OnCommand(string command, string arguments) {
-        Plugin.Ui.ToggleConfig();
+        CommandList.Find(c => String.Equals(command, c.Name, StringComparison.OrdinalIgnoreCase))?.Action();
     }
+
+    private void ToggleHistory() {
+        Plugin.HistoryWindow.Toggle();
+    }
+
+    private void ToggleSettings() {
+        Plugin.SettingsWindow.Toggle();
+    }
+
+    private record Command(string Name, string Description, Action Action);
 }

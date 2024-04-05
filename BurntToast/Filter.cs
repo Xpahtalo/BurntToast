@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -26,8 +25,9 @@ public class Filter : IDisposable {
         Plugin.ToastGui.Toast                           -= OnToast;
     }
 
-    private bool AnyMatches(string text) {
-        return Plugin.Config.Patterns.Any(regex => regex.IsMatch(text));
+    private (bool, string) AnyMatches(string text) {
+        var match = Plugin.Config.Patterns.Find(regex => regex.IsMatch(text));
+        return (match is not null, match?.ToString() ?? "");
     }
 
     private void OnToast(ref SeString message, ref ToastOptions options, ref bool isHandled) {
@@ -44,27 +44,37 @@ public class Filter : IDisposable {
 
     private void DoFilter(SeString message, ref bool isHandled) {
         if (isHandled) {
+            Plugin.AddHistory(message.TextValue, HistoryType.Toast, HandledType.HandledExternally);
             return;
         }
 
-        if (AnyMatches(message.TextValue)) {
+        var (matched, regex) = AnyMatches(message.TextValue);
+        if (matched) {
+            Plugin.AddHistory(message.TextValue, HistoryType.Toast, HandledType.Blocked, regex);
             isHandled = true;
+            return;
         }
+
+        Plugin.AddHistory(message.TextValue, HistoryType.Toast, HandledType.Passed);
     }
 
     private void OnBattleTalk(ref SeString sender, ref SeString message, ref BattleTalkOptions options,
                               ref bool     isHandled) {
+        var text = message.TextValue;
+        
         if (isHandled) {
+            Plugin.AddHistory(text, HistoryType.BattleTalk, HandledType.HandledExternally);
             return;
         }
-
-        var text    = message.TextValue;
+        
         var pattern = Plugin.Config.BattleTalkPatterns.Find(pattern => pattern.Pattern.IsMatch(text));
         if (pattern == null) {
+            Plugin.AddHistory(text, HistoryType.BattleTalk, HandledType.Passed);
             return;
         }
 
         isHandled = true;
+        Plugin.AddHistory(text, HistoryType.BattleTalk, HandledType.Blocked, pattern.Pattern.ToString());
 
         if (pattern.ShowMessage) {
             Plugin.ChatGui.Print(new XivChatEntry {
