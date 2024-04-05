@@ -119,6 +119,7 @@ public class PluginUi : IDisposable {
 
         if (toRemove != null) {
             Plugin.Config.Patterns.RemoveAt(toRemove.Value);
+            Plugin.Config.Save();
         }
     }
 
@@ -181,6 +182,7 @@ public class PluginUi : IDisposable {
 
         if (toRemove != null) {
             Plugin.Config.BattleTalkPatterns.RemoveAt(toRemove.Value);
+            Plugin.Config.Save();
         }
     }
 }
