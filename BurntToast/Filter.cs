@@ -44,37 +44,37 @@ public class Filter : IDisposable {
 
     private void DoFilter(SeString message, ref bool isHandled) {
         if (isHandled) {
-            Plugin.AddHistory(message.TextValue, HistoryType.Toast, HandledType.HandledExternally);
+            Plugin.AddToastHistory(message.TextValue, HandledType.HandledExternally);
             return;
         }
 
         var (matched, regex) = AnyMatches(message.TextValue);
         if (matched) {
-            Plugin.AddHistory(message.TextValue, HistoryType.Toast, HandledType.Blocked, regex);
+            Plugin.AddToastHistory(message.TextValue, HandledType.Blocked, regex);
             isHandled = true;
             return;
         }
 
-        Plugin.AddHistory(message.TextValue, HistoryType.Toast, HandledType.Passed);
+        Plugin.AddToastHistory(message.TextValue, HandledType.Passed);
     }
 
     private void OnBattleTalk(ref SeString sender, ref SeString message, ref BattleTalkOptions options,
                               ref bool     isHandled) {
         var text = message.TextValue;
-        
+
         if (isHandled) {
-            Plugin.AddHistory(text, HistoryType.BattleTalk, HandledType.HandledExternally);
+            Plugin.AddBattleTalkHistory(sender.TextValue, text, HandledType.HandledExternally);
             return;
         }
-        
+
         var pattern = Plugin.Config.BattleTalkPatterns.Find(pattern => pattern.Pattern.IsMatch(text));
         if (pattern == null) {
-            Plugin.AddHistory(text, HistoryType.BattleTalk, HandledType.Passed);
+            Plugin.AddBattleTalkHistory(sender.TextValue, text, HandledType.Passed);
             return;
         }
 
         isHandled = true;
-        Plugin.AddHistory(text, HistoryType.BattleTalk, HandledType.Blocked, pattern.Pattern.ToString());
+        Plugin.AddBattleTalkHistory(sender.TextValue, text, HandledType.Blocked, pattern.Pattern.ToString());
 
         if (pattern.ShowMessage) {
             Plugin.ChatGui.Print(new XivChatEntry {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -9,6 +8,8 @@ using XivCommon;
 namespace BurntToast;
 
 public class BurntToast : IDalamudPlugin {
+    private const int HistoryCapacity = 1000;
+
     public BurntToast(DalamudPluginInterface @interface,     IChatGui  chatGui,
                       ICommandManager        commandManager, IToastGui toastGui,
                       IPluginLog             log) {
@@ -29,10 +30,11 @@ public class BurntToast : IDalamudPlugin {
         Interface.UiBuilder.Draw         += WindowSystem.Draw;
         Interface.UiBuilder.OpenConfigUi += SettingsWindow.Toggle;
 
-        Commands = new Commands(this);
-        Common   = new XivCommonBase(Interface, Hooks.BattleTalk);
-        Filter   = new Filter(this);
-        History  = new Queue<HistoryEntry>();
+        Commands          = new Commands(this);
+        Common            = new XivCommonBase(Interface, Hooks.BattleTalk);
+        Filter            = new Filter(this);
+        ToastHistory      = new Queue<ToastHistoryEntry>(HistoryCapacity);
+        BattleTalkHistory = new Queue<BattleTalkHistoryEntry>(HistoryCapacity);
     }
 
     internal static string Name => "Burnt Toast";
@@ -48,15 +50,13 @@ public class BurntToast : IDalamudPlugin {
     internal SettingsUi SettingsWindow { get; }
     internal HistoryUi  HistoryWindow  { get; }
 
-    internal IEnumerable<HistoryEntry> ToastHistory => History.Where(entry => entry.Type == HistoryType.Toast);
+    internal Queue<BattleTalkHistoryEntry> BattleTalkHistory { get; }
 
-    internal IEnumerable<HistoryEntry> BattleTalkHistory =>
-        History.Where(entry => entry.Type == HistoryType.BattleTalk);
+    internal Queue<ToastHistoryEntry> ToastHistory { get; }
 
-    private WindowSystem        WindowSystem { get; } = new(Name);
-    private Queue<HistoryEntry> History      { get; }
-    private Commands            Commands     { get; }
-    private Filter              Filter       { get; }
+    private WindowSystem WindowSystem { get; } = new(Name);
+    private Commands     Commands     { get; }
+    private Filter       Filter       { get; }
 
     public void Dispose() {
         WindowSystem.RemoveAllWindows();
@@ -66,23 +66,45 @@ public class BurntToast : IDalamudPlugin {
         Commands.Dispose();
     }
 
-    internal void AddHistory(string text, HistoryType type, HandledType blocked, string regex = "") {
-        if (History.Count >= 1000) {
-            History.Dequeue();
+    internal void AddToastHistory(string message, HandledType handledType, string regex = "") {
+        if (ToastHistory.Count >= HistoryCapacity) {
+            ToastHistory.Dequeue();
         }
 
-        History.Enqueue(new HistoryEntry(DateTime.UtcNow, text, type, blocked, regex));
+        ToastHistory.Enqueue(new ToastHistoryEntry(message, DateTime.UtcNow, handledType, regex));
+    }
+
+    internal void AddBattleTalkHistory(string sender, string message, HandledType handledType, string regex = "") {
+        if (BattleTalkHistory.Count >= HistoryCapacity) {
+            BattleTalkHistory.Dequeue();
+        }
+
+        BattleTalkHistory.Enqueue(new BattleTalkHistoryEntry(sender, message, DateTime.UtcNow, handledType, regex));
     }
 }
 
-public record HistoryEntry(DateTime Timestamp, string Text, HistoryType Type, HandledType HandledType, string Regex);
+internal record HistoryEntry(
+    string      Message,
+    DateTime    Timestamp,
+    HandledType HandledType,
+    string      Regex);
 
-public enum HistoryType {
-    Toast,
-    BattleTalk,
+internal record BattleTalkHistoryEntry : HistoryEntry {
+    internal string Sender;
+
+    internal BattleTalkHistoryEntry(string Sender, string Message, DateTime Timestamp, HandledType HandledType,
+                                    string Regex)
+        : base(Message, Timestamp, HandledType, Regex) {
+        this.Sender = Sender;
+    }
 }
 
-public enum HandledType {
+internal record ToastHistoryEntry : HistoryEntry {
+    internal ToastHistoryEntry(string Message, DateTime Timestamp, HandledType HandledType, string Regex)
+        : base(Message, Timestamp, HandledType, Regex) { }
+}
+
+internal enum HandledType {
     Passed,
     HandledExternally,
     Blocked,

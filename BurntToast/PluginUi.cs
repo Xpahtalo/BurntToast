@@ -190,22 +190,22 @@ public sealed class HistoryUi(BurntToast plugin, SettingsUi settingsUi) : Window
         ImGui.EndTabBar();
     }
 
-    public void DrawToastHistory() {
+    private void DrawToastHistory() {
         ImGui.PushTextWrapPos();
-        foreach (var (toast, i) in Plugin.ToastHistory.Select((x, i) => (x, i))) {
+        foreach (var (historyEntry, i) in Plugin.ToastHistory.Select((x, i) => (x, i))) {
             ImGui.PushID(i);
-            DrawHistoryEntry(toast);
+            DrawHistoryEntry(historyEntry);
             ImGui.PopID();
         }
 
         ImGui.PopTextWrapPos();
     }
 
-    public void DrawBattleTalkHistory() {
+    private void DrawBattleTalkHistory() {
         ImGui.PushTextWrapPos();
-        foreach (var (toast, i) in Plugin.BattleTalkHistory.Select((x, i) => (x, i))) {
+        foreach (var (historyEntry, i) in Plugin.BattleTalkHistory.Select((x, i) => (x, i))) {
             ImGui.PushID(i);
-            DrawHistoryEntry(toast);
+            DrawHistoryEntry(historyEntry);
             ImGui.PopID();
         }
 
@@ -219,21 +219,26 @@ public sealed class HistoryUi(BurntToast plugin, SettingsUi settingsUi) : Window
             _                             => Passed,
         };
 
-        ColorEntry(entry.Text, color);
+        ColorEntry(entry.Message, color);
 
         if (ImGui.IsItemClicked() && (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl))) {
-            if (entry.Type == HistoryType.Toast) {
-                Plugin.Config.BattleTalkPatterns.Add(new BattleTalkPattern(new Regex(Regex.Escape(entry.Text)), true));
+            if (entry is ToastHistoryEntry) {
+                Plugin.Config.BattleTalkPatterns.Add(
+                    new BattleTalkPattern(new Regex(Regex.Escape(entry.Message)), true));
             }
 
-            if (entry.Type == HistoryType.Toast) {
-                Plugin.Config.Patterns.Add(new Regex(Regex.Escape(entry.Text)));
+            if (entry is BattleTalkHistoryEntry) {
+                Plugin.Config.Patterns.Add(new Regex(Regex.Escape(entry.Message)));
             }
         }
 
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
             ImGui.TextUnformatted(entry.Timestamp.ToLocalTime().ToString(CultureInfo.CurrentCulture));
+            if (entry is BattleTalkHistoryEntry battleEntry) {
+                ImGui.TextUnformatted($"Spoken by: {battleEntry.Sender}");
+            }
+
             if (entry.HandledType == HandledType.Blocked) {
                 ImGui.TextUnformatted($"Blocked by: {entry.Regex}");
             }
