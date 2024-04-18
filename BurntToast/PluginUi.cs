@@ -156,12 +156,13 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
     }
 }
 
-public sealed class HistoryUi(BurntToast plugin, SettingsUi settingsUi) : Window("Toast History") {
-    private static readonly Vector4    Passed            = new(0f, 1f, 0f, 1f);
-    private static readonly Vector4    HandledExternally = new(1f, 1f, 0f, 1f);
-    private static readonly Vector4    Blocked           = new(1f, 0f, 0f, 1f);
-    private                 BurntToast Plugin         { get; } = plugin;
-    private                 SettingsUi SettingsWindow { get; } = settingsUi;
+public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
+    private static readonly Vector4 Passed            = new(0f, 1f, 0f, 1f);
+    private static readonly Vector4 HandledExternally = new(1f, 1f, 0f, 1f);
+    private static readonly Vector4 Blocked           = new(1f, 0f, 0f, 1f);
+
+
+    private BurntToast Plugin { get; } = plugin;
 
     public override void Draw() {
         ImGui.PushTextWrapPos();

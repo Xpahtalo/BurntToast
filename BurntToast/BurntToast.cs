@@ -23,7 +23,7 @@ public class BurntToast : IDalamudPlugin {
         Config.Initialise(this);
 
         SettingsWindow = new SettingsUi(this);
-        HistoryWindow  = new HistoryUi(this, SettingsWindow);
+        HistoryWindow  = new HistoryUi(this);
         WindowSystem.AddWindow(SettingsWindow);
         WindowSystem.AddWindow(HistoryWindow);
 
