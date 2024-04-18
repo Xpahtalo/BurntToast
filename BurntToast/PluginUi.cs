@@ -46,10 +46,14 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
         int? toRemove = null;
 
+        var inputWidth = -(ImGui.CalcTextSize("Delete") + ImGui.GetStyle().FramePadding * 4).X;
         for (var i = 0; i < Plugin.Config.Patterns.Count; i++) {
             var pattern     = Plugin.Config.Patterns[i];
             var patternText = pattern.ToString();
-            var textResult  = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
+
+            ImGui.PushItemWidth(inputWidth);
+            var textResult = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
+            ImGui.PopItemWidth();
 
             ImGui.SameLine();
             if (ImGui.Button($"Delete##{i}")) {
