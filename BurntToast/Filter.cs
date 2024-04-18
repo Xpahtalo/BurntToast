@@ -7,16 +7,18 @@ using XivCommon.Functions;
 namespace BurntToast;
 
 public class Filter : IDisposable {
-    internal Filter(BurntToast plugin) {
-        Plugin = plugin;
+    private BurntToast Plugin  { get; }
+    private History    History { get; }
+
+    internal Filter(BurntToast plugin, History history) {
+        Plugin  = plugin;
+        History = history;
 
         Plugin.ToastGui.Toast                           += OnToast;
         Plugin.ToastGui.QuestToast                      += OnQuestToast;
         Plugin.ToastGui.ErrorToast                      += OnErrorToast;
         Plugin.Common.Functions.BattleTalk.OnBattleTalk += OnBattleTalk;
     }
-
-    private BurntToast Plugin { get; }
 
     public void Dispose() {
         Plugin.Common.Functions.BattleTalk.OnBattleTalk -= OnBattleTalk;
@@ -44,18 +46,18 @@ public class Filter : IDisposable {
 
     private void DoFilter(SeString message, ref bool isHandled) {
         if (isHandled) {
-            Plugin.AddToastHistory(message.TextValue, HandledType.HandledExternally);
+            History.AddToastHistory(message.TextValue, HandledType.HandledExternally);
             return;
         }
 
         var (matched, regex) = AnyMatches(message.TextValue);
         if (matched) {
-            Plugin.AddToastHistory(message.TextValue, HandledType.Blocked, regex);
+            History.AddToastHistory(message.TextValue, HandledType.Blocked, regex);
             isHandled = true;
             return;
         }
 
-        Plugin.AddToastHistory(message.TextValue, HandledType.Passed);
+        History.AddToastHistory(message.TextValue, HandledType.Passed);
     }
 
     private void OnBattleTalk(ref SeString sender, ref SeString message, ref BattleTalkOptions options,
@@ -63,18 +65,18 @@ public class Filter : IDisposable {
         var text = message.TextValue;
 
         if (isHandled) {
-            Plugin.AddBattleTalkHistory(sender.TextValue, text, HandledType.HandledExternally);
+            History.AddBattleTalkHistory(sender.TextValue, text, HandledType.HandledExternally);
             return;
         }
 
         var pattern = Plugin.Config.BattleTalkPatterns.Find(pattern => pattern.Pattern.IsMatch(text));
         if (pattern == null) {
-            Plugin.AddBattleTalkHistory(sender.TextValue, text, HandledType.Passed);
+            History.AddBattleTalkHistory(sender.TextValue, text, HandledType.Passed);
             return;
         }
 
         isHandled = true;
-        Plugin.AddBattleTalkHistory(sender.TextValue, text, HandledType.Blocked, pattern.Pattern.ToString());
+        History.AddBattleTalkHistory(sender.TextValue, text, HandledType.Blocked, pattern.Pattern.ToString());
 
         if (pattern.ShowMessage) {
             Plugin.ChatGui.Print(new XivChatEntry {

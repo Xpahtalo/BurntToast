@@ -15,6 +15,24 @@ public class Configuration : IPluginConfiguration {
 
     public int Version { get; set; } = 1;
 
+    internal void AddToastPattern(string message) {
+        AddToastPattern(new Regex(message, RegexOptions.Compiled));
+    }
+
+    internal void AddToastPattern(Regex regex) {
+        Patterns.Add(regex);
+        Save();
+    }
+
+    internal void AddBattleTalkPattern(string message, bool showMessage) {
+        AddBattleTalkPattern(new Regex(message, RegexOptions.Compiled), showMessage);
+    }
+
+    internal void AddBattleTalkPattern(Regex regex, bool showMessage) {
+        BattleTalkPatterns.Add(new BattleTalkPattern(regex, showMessage));
+        Save();
+    }
+
     internal void Initialise(BurntToast plugin) {
         Plugin = plugin;
     }

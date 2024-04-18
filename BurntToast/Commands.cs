@@ -5,6 +5,9 @@ using Dalamud.Game.Command;
 namespace BurntToast;
 
 public class Commands : IDisposable {
+    private List<Command> CommandList { get; }
+    private BurntToast    Plugin      { get; }
+
     internal Commands(BurntToast plugin) {
         Plugin = plugin;
 
@@ -22,10 +25,6 @@ public class Commands : IDisposable {
         }
     }
 
-    private List<Command> CommandList { get; }
-
-    private BurntToast Plugin { get; }
-
     public void Dispose() {
         foreach (var command in CommandList) {
             Plugin.Log.Debug("Removing command {0}", command.Name);
@@ -34,7 +33,7 @@ public class Commands : IDisposable {
     }
 
     private void OnCommand(string command, string arguments) {
-        CommandList.Find(c => String.Equals(command, c.Name, StringComparison.OrdinalIgnoreCase))?.Action();
+        CommandList.Find(c => string.Equals(command, c.Name, StringComparison.OrdinalIgnoreCase))?.Action();
     }
 
     private void ToggleHistory() {

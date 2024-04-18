@@ -1,16 +1,17 @@
 ﻿using System;
+using System.Text;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using ImGuiNET;
 
 namespace BurntToast;
 
 public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings") {
     private BurntToast Plugin { get; } = plugin;
-
 
     public override void Draw() {
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
@@ -39,7 +40,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         ImGui.PopTextWrapPos();
 
         if (ImGui.Button("Add")) {
-            Plugin.Config.Patterns.Add(new Regex(""));
+            Plugin.Config.AddToastPattern("");
         }
 
         ImGui.Separator();
@@ -99,7 +100,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         ImGui.PopTextWrapPos();
 
         if (ImGui.Button("Add")) {
-            Plugin.Config.BattleTalkPatterns.Add(new BattleTalkPattern(new Regex(""), true));
+            Plugin.Config.AddBattleTalkPattern("", true);
         }
 
         ImGui.Separator();
@@ -156,11 +157,10 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
     }
 }
 
-public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
+public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toast History") {
     private static readonly Vector4 Passed            = new(0f, 1f, 0f, 1f);
     private static readonly Vector4 HandledExternally = new(1f, 1f, 0f, 1f);
     private static readonly Vector4 Blocked           = new(1f, 0f, 0f, 1f);
-
 
     private BurntToast Plugin { get; } = plugin;
 
@@ -170,9 +170,9 @@ public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
         ImGui.TextUnformatted("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
-            ColorEntry("Displayed.",                                 Passed);
+            ColorEntry("Was not blocked by any regex.",              Passed);
             ColorEntry("Ignored because another plugin handled it.", HandledExternally);
-            ColorEntry("Blocked",                                    Blocked);
+            ColorEntry("Was blocked by a regex.",                    Blocked);
             ImGui.EndTooltip();
         }
 
@@ -197,7 +197,7 @@ public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
 
     private void DrawToastHistory() {
         ImGui.PushTextWrapPos();
-        foreach (var (historyEntry, i) in Plugin.ToastHistory.Select((x, i) => (x, i))) {
+        foreach (var (historyEntry, i) in history.ToastHistory.Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             DrawHistoryEntry(historyEntry);
             ImGui.PopID();
@@ -208,7 +208,7 @@ public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
 
     private void DrawBattleTalkHistory() {
         ImGui.PushTextWrapPos();
-        foreach (var (historyEntry, i) in Plugin.BattleTalkHistory.Select((x, i) => (x, i))) {
+        foreach (var (historyEntry, i) in history.BattleTalkHistory.Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             DrawHistoryEntry(historyEntry);
             ImGui.PopID();
@@ -227,20 +227,20 @@ public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
         ColorEntry(entry.Message, color);
 
         if (ImGui.IsItemClicked() && (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl))) {
-            if (entry is ToastHistoryEntry) {
-                Plugin.Config.BattleTalkPatterns.Add(
-                    new BattleTalkPattern(new Regex(Regex.Escape(entry.Message)), true));
-            }
-
-            if (entry is BattleTalkHistoryEntry) {
-                Plugin.Config.Patterns.Add(new Regex(Regex.Escape(entry.Message)));
+            switch (entry) {
+                case ToastHistoryEntry:
+                    Plugin.Config.AddToastPattern(EscapeRegex(entry.Message));
+                    break;
+                case BattleTalkHistoryEntry:
+                    Plugin.Config.AddBattleTalkPattern(EscapeRegex(entry.Message), true);
+                    break;
             }
         }
 
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
             ImGui.TextUnformatted(entry.Timestamp.ToLocalTime().ToString(CultureInfo.CurrentCulture));
-            if (entry is BattleTalkHistoryEntry battleEntry) {
+            if (entry is BattleTalkHistoryEntry battleEntry && !battleEntry.Sender.IsNullOrWhitespace()) {
                 ImGui.TextUnformatted($"Spoken by: {battleEntry.Sender}");
             }
 
@@ -256,5 +256,64 @@ public sealed class HistoryUi(BurntToast plugin) : Window("Toast History") {
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.TextUnformatted(text);
         ImGui.PopStyleColor();
+    }
+
+    // Not using Regex.Escape because it escapes whitespace, which is unnecessary for our use-case, and ugly for the user.
+    private static string EscapeRegex(ReadOnlySpan<char> input) {
+        var sb = new StringBuilder(input.Length * 2);
+        foreach (var ch in input) {
+            switch (ch) {
+                case '\\':
+                    sb.Append(@"\\");
+                    break;
+                case '*':
+                    sb.Append(@"\*");
+                    break;
+                case '+':
+                    sb.Append(@"\+");
+                    break;
+                case '?':
+                    sb.Append(@"\?");
+                    break;
+                case '|':
+                    sb.Append(@"\|");
+                    break;
+                case '{':
+                    sb.Append(@"\{");
+                    break;
+                case '}':
+                    sb.Append(@"\}");
+                    break;
+                case '[':
+                    sb.Append(@"\[");
+                    break;
+                case ']':
+                    sb.Append(@"\]");
+                    break;
+                case '(':
+                    sb.Append(@"\(");
+                    break;
+                case ')':
+                    sb.Append(@"\)");
+                    break;
+                case '^':
+                    sb.Append(@"\^");
+                    break;
+                case '$':
+                    sb.Append(@"\$");
+                    break;
+                case '.':
+                    sb.Append(@"\.");
+                    break;
+                case '#':
+                    sb.Append(@"\#");
+                    break;
+                default:
+                    sb.Append(ch);
+                    break;
+            }
+        }
+
+        return sb.ToString();
     }
 }
