@@ -14,8 +14,9 @@ public class Commands : IDisposable {
         CommandList = new List<Command> {
             new("/burnttoast", "Opens the configuration for Burnt Toast", ToggleSettings),
             new("/burnttoasthistory", "Opens the toast history window", ToggleHistory),
-            new("/bt", "Alias for /burnttoast", ToggleSettings),
-            new("/bth", "Alias for /burnttoasthistory", ToggleHistory),
+            // /bt conflicts with in-game /battletarget, which has /bt as an alias
+            new("/pbt", "Alias for /burnttoast", ToggleSettings),
+            new("/pbth", "Alias for /burnttoasthistory", ToggleHistory),
         };
         foreach (var command in CommandList) {
             Plugin.Log.Debug("Adding command {0} with the description {1}", command.Name, command.Description);
