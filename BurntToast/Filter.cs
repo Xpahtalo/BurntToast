@@ -3,6 +3,7 @@ using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
+using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using static FFXIVClientStructs.FFXIV.Client.UI.UIModule.Delegates;
 
@@ -79,71 +80,42 @@ public sealed class Filter : IDisposable {
         History.AddToastHistory(message.TextValue, HandledType.Passed);
     }
 
-    private unsafe void ShowBattleTalk(UIModule* self, byte* sender, byte* talk, float duration, byte style) {
-        Plugin.Log.Debug("Intercepting BattleTalk");
+    private unsafe void ShowBattleTalk(UIModule* self,     byte* sender, byte* talk,
+                                       float     duration, byte  style) {
+        if (!InnerShowBattleTalkDetour(sender, talk, TalkType.Standard)) {
+            _showBattleTalkHook.Original(self, sender, talk, duration, style);
+        }
+    }
 
+    private unsafe void ShowBattleTalkImage(UIModule* self,     byte* sender, byte* talk,
+                                            float     duration, uint  image,  byte  style) {
+        if (!InnerShowBattleTalkDetour(sender, talk, TalkType.Image)) {
+            _showBattleTalkImageHook.Original(self, sender, talk, duration, image, style);
+        }
+    }
+
+    private unsafe void ShowBattleTalkSound(UIModule* self,     byte* sender, byte* talk,
+                                            float     duration, int   sound,  byte  style) {
+        if (!InnerShowBattleTalkDetour(sender, talk, TalkType.Sound)) {
+            _showBattleTalkSoundHook.Original(self, sender, talk, duration, sound, style);
+        }
+    }
+
+    private unsafe bool InnerShowBattleTalkDetour(byte* sender, byte* talk, TalkType type) {
         var shouldBlock = false;
         try {
-            shouldBlock = ShouldBlock(sender, talk);
+            shouldBlock = ShouldBlock(new IntPtr(sender), new IntPtr(talk));
         }
         catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to handle ShowBattleTalk");
+            Plugin.Log.Error(ex, $"Failed to handle BattleTalk of type {type}");
         }
-        finally {
-            if (!shouldBlock) {
-                _showBattleTalkHook.Original(self, sender, talk, duration, style);
-            }
-        }
+
+        return shouldBlock;
     }
 
-    private unsafe void ShowBattleTalkImage(UIModule* self, byte* sender, byte* talk, float duration, uint image,
-                                            byte      style) {
-        Plugin.Log.Debug("Intercepting BattleTalkImage");
-
-        var shouldBlock = false;
-        try {
-            shouldBlock = ShouldBlock(sender, talk);
-        }
-        catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to handle BattleTalkImage");
-        }
-        finally {
-            if (!shouldBlock) {
-                _showBattleTalkImageHook.Original(self, sender, talk, duration, image, style);
-            }
-        }
-    }
-
-    private unsafe void ShowBattleTalkSound(UIModule* self, byte* sender, byte* talk, float duration, int sound,
-                                            byte      style) {
-        Plugin.Log.Debug("Intercepting BattleTalkSound");
-
-        var shouldBlock = false;
-        try {
-            shouldBlock = ShouldBlock(sender, talk);
-        }
-        catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to handle BattleTalkSound");
-        }
-        finally {
-            if (!shouldBlock) {
-                _showBattleTalkSoundHook.Original(self, sender, talk, duration, sound, style);
-            }
-        }
-    }
-
-    private static unsafe int GetLength(byte* s) {
-        var l = 0;
-        while (s[l] != '\0') {
-            l += 1;
-        }
-
-        return l;
-    }
-
-    private unsafe bool ShouldBlock(byte* sender, byte* talk) {
-        var senderValue = SeString.Parse(sender, GetLength(sender)).TextValue;
-        var talkValue   = SeString.Parse(talk,   GetLength(talk)).TextValue;
+    private bool ShouldBlock(IntPtr sender, IntPtr talk) {
+        var senderValue = MemoryHelper.ReadSeStringNullTerminated(sender).TextValue;
+        var talkValue   = MemoryHelper.ReadSeStringNullTerminated(talk).TextValue;
 
         var pattern = Plugin.Config.BattleTalkPatterns.Find(pattern => pattern.Pattern.IsMatch(talkValue));
         var matched = pattern is not null;
@@ -166,5 +138,11 @@ public sealed class Filter : IDisposable {
         }
 
         return matched;
+    }
+
+    private enum TalkType {
+        Standard,
+        Image,
+        Sound,
     }
 }
