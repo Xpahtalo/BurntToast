@@ -17,12 +17,12 @@ public class History {
         ToastHistory.Enqueue(new ToastHistoryEntry(message, DateTime.UtcNow, handledType, regex));
     }
 
-    internal void AddBattleTalkHistory(string sender, string message, HandledType handledType, string regex = "") {
+    internal void AddBattleTalkHistory(BattleTalkHistoryEntry historyEntry) {
         if (BattleTalkHistory.Count >= HistoryCapacity) {
             BattleTalkHistory.Dequeue();
         }
-
-        BattleTalkHistory.Enqueue(new BattleTalkHistoryEntry(sender, message, DateTime.UtcNow, handledType, regex));
+        
+        BattleTalkHistory.Enqueue(historyEntry);
     }
 }
 
