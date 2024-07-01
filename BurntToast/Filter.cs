@@ -2,29 +2,48 @@
 using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using XivCommon.Functions;
+using Dalamud.Hooking;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using static FFXIVClientStructs.FFXIV.Client.UI.UIModule.Delegates;
 
 namespace BurntToast;
 
-public class Filter : IDisposable {
+public sealed class Filter : IDisposable {
     private BurntToast Plugin  { get; }
     private History    History { get; }
 
-    internal Filter(BurntToast plugin, History history) {
+    private readonly Hook<ShowBattleTalk>      _showBattleTalkHook;
+    private readonly Hook<ShowBattleTalkImage> _showBattleTalkImageHook;
+    private readonly Hook<ShowBattleTalkSound> _showBattleTalkSoundHook;
+
+    internal unsafe Filter(BurntToast plugin, History history) {
         Plugin  = plugin;
         History = history;
 
-        Plugin.ToastGui.Toast                           += OnToast;
-        Plugin.ToastGui.QuestToast                      += OnQuestToast;
-        Plugin.ToastGui.ErrorToast                      += OnErrorToast;
-        Plugin.Common.Functions.BattleTalk.OnBattleTalk += OnBattleTalk;
+        Plugin.ToastGui.Toast      += OnToast;
+        Plugin.ToastGui.QuestToast += OnQuestToast;
+        Plugin.ToastGui.ErrorToast += OnErrorToast;
+        _showBattleTalkHook =
+            Plugin.InteropProvider.HookFromAddress<ShowBattleTalk>(
+                UIModule.StaticVirtualTablePointer->ShowBattleTalk, ShowBattleTalk);
+        _showBattleTalkImageHook =
+            Plugin.InteropProvider.HookFromAddress<ShowBattleTalkImage>(
+                UIModule.StaticVirtualTablePointer->ShowBattleTalkImage, ShowBattleTalkImage);
+        _showBattleTalkSoundHook =
+            Plugin.InteropProvider.HookFromAddress<ShowBattleTalkSound>(
+                UIModule.StaticVirtualTablePointer->ShowBattleTalkSound, ShowBattleTalkSound);
+        _showBattleTalkHook.Enable();
+        _showBattleTalkImageHook.Enable();
+        _showBattleTalkSoundHook.Enable();
     }
 
     public void Dispose() {
-        Plugin.Common.Functions.BattleTalk.OnBattleTalk -= OnBattleTalk;
-        Plugin.ToastGui.ErrorToast                      -= OnErrorToast;
-        Plugin.ToastGui.QuestToast                      -= OnQuestToast;
-        Plugin.ToastGui.Toast                           -= OnToast;
+        _showBattleTalkHook.Dispose();
+        _showBattleTalkImageHook.Dispose();
+        _showBattleTalkSoundHook.Dispose();
+        Plugin.ToastGui.ErrorToast -= OnErrorToast;
+        Plugin.ToastGui.QuestToast -= OnQuestToast;
+        Plugin.ToastGui.Toast      -= OnToast;
     }
 
     private (bool, string) AnyMatches(string text) {
@@ -60,30 +79,92 @@ public class Filter : IDisposable {
         History.AddToastHistory(message.TextValue, HandledType.Passed);
     }
 
-    private void OnBattleTalk(ref SeString sender, ref SeString message, ref BattleTalkOptions options,
-                              ref bool     isHandled) {
-        var text = message.TextValue;
+    private unsafe void ShowBattleTalk(UIModule* self, byte* sender, byte* talk, float duration, byte style) {
+        Plugin.Log.Debug("Intercepting BattleTalk");
 
-        if (isHandled) {
-            History.AddBattleTalkHistory(sender.TextValue, text, HandledType.HandledExternally);
-            return;
+        var shouldBlock = false;
+        try {
+            shouldBlock = ShouldBlock(sender, talk);
+        }
+        catch (Exception ex) {
+            Plugin.Log.Error(ex, "Failed to handle ShowBattleTalk");
+        }
+        finally {
+            if (!shouldBlock) {
+                _showBattleTalkHook.Original(self, sender, talk, duration, style);
+            }
+        }
+    }
+
+    private unsafe void ShowBattleTalkImage(UIModule* self, byte* sender, byte* talk, float duration, uint image,
+                                            byte      style) {
+        Plugin.Log.Debug("Intercepting BattleTalkImage");
+
+        var shouldBlock = false;
+        try {
+            shouldBlock = ShouldBlock(sender, talk);
+        }
+        catch (Exception ex) {
+            Plugin.Log.Error(ex, "Failed to handle BattleTalkImage");
+        }
+        finally {
+            if (!shouldBlock) {
+                _showBattleTalkImageHook.Original(self, sender, talk, duration, image, style);
+            }
+        }
+    }
+
+    private unsafe void ShowBattleTalkSound(UIModule* self, byte* sender, byte* talk, float duration, int sound,
+                                            byte      style) {
+        Plugin.Log.Debug("Intercepting BattleTalkSound");
+
+        var shouldBlock = false;
+        try {
+            shouldBlock = ShouldBlock(sender, talk);
+        }
+        catch (Exception ex) {
+            Plugin.Log.Error(ex, "Failed to handle BattleTalkSound");
+        }
+        finally {
+            if (!shouldBlock) {
+                _showBattleTalkSoundHook.Original(self, sender, talk, duration, sound, style);
+            }
+        }
+    }
+
+    private static unsafe int GetLength(byte* s) {
+        var l = 0;
+        while (s[l] != '\0') {
+            l += 1;
         }
 
-        var pattern = Plugin.Config.BattleTalkPatterns.Find(pattern => pattern.Pattern.IsMatch(text));
-        if (pattern == null) {
-            History.AddBattleTalkHistory(sender.TextValue, text, HandledType.Passed);
-            return;
-        }
+        return l;
+    }
 
-        isHandled = true;
-        History.AddBattleTalkHistory(sender.TextValue, text, HandledType.Blocked, pattern.Pattern.ToString());
+    private unsafe bool ShouldBlock(byte* sender, byte* talk) {
+        var senderValue = SeString.Parse(sender, GetLength(sender)).TextValue;
+        var talkValue   = SeString.Parse(talk,   GetLength(talk)).TextValue;
 
-        if (pattern.ShowMessage) {
+        var pattern = Plugin.Config.BattleTalkPatterns.Find(pattern => pattern.Pattern.IsMatch(talkValue));
+        var matched = pattern is not null;
+
+        var history = new BattleTalkHistoryEntry(
+            senderValue,
+            talkValue,
+            DateTime.UtcNow,
+            matched ? HandledType.Blocked : HandledType.Passed,
+            pattern?.Pattern.ToString() ?? string.Empty);
+
+        History.AddBattleTalkHistory(history);
+
+        if (pattern is { ShowMessage: true, }) {
             Plugin.ChatGui.Print(new XivChatEntry {
                 Type    = (XivChatType)68,
-                Name    = sender.TextValue,
-                Message = message,
+                Name    = senderValue,
+                Message = talkValue,
             });
         }
+
+        return matched;
     }
 }
