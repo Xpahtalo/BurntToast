@@ -197,7 +197,7 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
     private void DrawToastHistory() {
         ImGui.PushTextWrapPos();
-        foreach (var (historyEntry, i) in history.ToastHistory.Select((x, i) => (x, i))) {
+        foreach (var (historyEntry, i) in history.ToastHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             DrawHistoryEntry(historyEntry);
             ImGui.PopID();
@@ -208,7 +208,7 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
     private void DrawBattleTalkHistory() {
         ImGui.PushTextWrapPos();
-        foreach (var (historyEntry, i) in history.BattleTalkHistory.Select((x, i) => (x, i))) {
+        foreach (var (historyEntry, i) in history.BattleTalkHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             DrawHistoryEntry(historyEntry);
             ImGui.PopID();
