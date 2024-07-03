@@ -13,9 +13,9 @@ public sealed class Filter : IDisposable {
     private BurntToast Plugin  { get; }
     private History    History { get; }
 
-    private readonly Hook<ShowBattleTalk>      _showBattleTalkHook;
-    private readonly Hook<ShowBattleTalkImage> _showBattleTalkImageHook;
-    private readonly Hook<ShowBattleTalkSound> _showBattleTalkSoundHook;
+    private readonly Hook<ShowBattleTalk>?      _showBattleTalkHook;
+    private readonly Hook<ShowBattleTalkImage>? _showBattleTalkImageHook;
+    private readonly Hook<ShowBattleTalkSound>? _showBattleTalkSoundHook;
 
     internal unsafe Filter(BurntToast plugin, History history) {
         Plugin  = plugin;
@@ -24,24 +24,43 @@ public sealed class Filter : IDisposable {
         Plugin.ToastGui.Toast      += OnToast;
         Plugin.ToastGui.QuestToast += OnQuestToast;
         Plugin.ToastGui.ErrorToast += OnErrorToast;
-        _showBattleTalkHook =
-            Plugin.InteropProvider.HookFromAddress<ShowBattleTalk>(
-                UIModule.StaticVirtualTablePointer->ShowBattleTalk, ShowBattleTalk);
-        _showBattleTalkImageHook =
-            Plugin.InteropProvider.HookFromAddress<ShowBattleTalkImage>(
-                UIModule.StaticVirtualTablePointer->ShowBattleTalkImage, ShowBattleTalkImage);
-        _showBattleTalkSoundHook =
-            Plugin.InteropProvider.HookFromAddress<ShowBattleTalkSound>(
-                UIModule.StaticVirtualTablePointer->ShowBattleTalkSound, ShowBattleTalkSound);
-        _showBattleTalkHook.Enable();
-        _showBattleTalkImageHook.Enable();
-        _showBattleTalkSoundHook.Enable();
+        
+        try {
+            _showBattleTalkHook =
+                Plugin.InteropProvider.HookFromAddress<ShowBattleTalk>(
+                    UIModule.StaticVirtualTablePointer->ShowBattleTalk, ShowBattleTalk);
+            _showBattleTalkHook.Enable();
+        }
+        catch (Exception ex) {
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalk. Some battle talks may not get filtered.");
+            throw;
+        }
+        
+        try {
+            _showBattleTalkImageHook =
+                Plugin.InteropProvider.HookFromAddress<ShowBattleTalkImage>(
+                    UIModule.StaticVirtualTablePointer->ShowBattleTalkImage, ShowBattleTalkImage);
+            _showBattleTalkImageHook.Enable();
+        }
+        catch (Exception ex) {
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered.");
+        }
+        
+        try {
+            _showBattleTalkSoundHook =
+                Plugin.InteropProvider.HookFromAddress<ShowBattleTalkSound>(
+                    UIModule.StaticVirtualTablePointer->ShowBattleTalkSound, ShowBattleTalkSound);
+            _showBattleTalkSoundHook.Enable();
+        }
+        catch (Exception ex) {
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered.");
+        }
     }
 
     public void Dispose() {
-        _showBattleTalkHook.Dispose();
-        _showBattleTalkImageHook.Dispose();
-        _showBattleTalkSoundHook.Dispose();
+        _showBattleTalkHook?.Dispose();
+        _showBattleTalkImageHook?.Dispose();
+        _showBattleTalkSoundHook?.Dispose();
         Plugin.ToastGui.ErrorToast -= OnErrorToast;
         Plugin.ToastGui.QuestToast -= OnQuestToast;
         Plugin.ToastGui.Toast      -= OnToast;
@@ -83,21 +102,21 @@ public sealed class Filter : IDisposable {
     private unsafe void ShowBattleTalk(UIModule* self,     byte* sender, byte* talk,
                                        float     duration, byte  style) {
         if (!InnerShowBattleTalkDetour(sender, talk, TalkType.Standard)) {
-            _showBattleTalkHook.Original(self, sender, talk, duration, style);
+            _showBattleTalkHook!.Original(self, sender, talk, duration, style);
         }
     }
 
     private unsafe void ShowBattleTalkImage(UIModule* self,     byte* sender, byte* talk,
-                                            float     duration, uint  image,  byte  style) {
+                                            float     duration, uint  image,  byte  style, int sound, uint entityId) {
         if (!InnerShowBattleTalkDetour(sender, talk, TalkType.Image)) {
-            _showBattleTalkImageHook.Original(self, sender, talk, duration, image, style);
+            _showBattleTalkImageHook!.Original(self, sender, talk, duration, image, style, sound, entityId);
         }
     }
 
     private unsafe void ShowBattleTalkSound(UIModule* self,     byte* sender, byte* talk,
                                             float     duration, int   sound,  byte  style) {
         if (!InnerShowBattleTalkDetour(sender, talk, TalkType.Sound)) {
-            _showBattleTalkSoundHook.Original(self, sender, talk, duration, sound, style);
+            _showBattleTalkSoundHook!.Original(self, sender, talk, duration, sound, style);
         }
     }
 
