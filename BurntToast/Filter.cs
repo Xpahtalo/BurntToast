@@ -32,7 +32,7 @@ public sealed class Filter : IDisposable {
             _showBattleTalkHook.Enable();
         }
         catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalk. Some battle talks may not get filtered.");
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalk. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
             throw;
         }
         
@@ -43,7 +43,7 @@ public sealed class Filter : IDisposable {
             _showBattleTalkImageHook.Enable();
         }
         catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered.");
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
         }
         
         try {
@@ -53,7 +53,7 @@ public sealed class Filter : IDisposable {
             _showBattleTalkSoundHook.Enable();
         }
         catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered.");
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
         }
     }
 
