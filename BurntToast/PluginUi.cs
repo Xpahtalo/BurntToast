@@ -14,6 +14,9 @@ namespace BurntToast;
 public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings") {
     private BurntToast Plugin { get; } = plugin;
 
+    private static string _delete     = "Delete";
+    private static string _showInChat = "Show in chat";
+
     public override void Draw() {
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
 
@@ -45,7 +48,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
         int? toRemove = null;
 
-        var inputWidth = -(ImGui.CalcTextSize("Delete") + ImGui.GetStyle().FramePadding * 4).X;
+        var inputWidth = -GetButtonSize(_delete).X;
         for (var i = 0; i < Plugin.Config.Patterns.Count; i++) {
             var pattern     = Plugin.Config.Patterns[i];
             var patternText = pattern.ToString();
@@ -55,7 +58,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
             ImGui.PopItemWidth();
 
             ImGui.SameLine();
-            if (ImGui.Button($"Delete##{i}")) {
+            if (ImGui.Button($"{_delete}##{i}")) {
                 toRemove = i;
             }
 
@@ -109,20 +112,26 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
         int? toRemove = null;
 
+        var deleteButtonSize = GetButtonSize(_delete);
+        var showCheckboxSize = GetCheckboxSize(_showInChat);
+        var inputWidth       = -(deleteButtonSize.X + showCheckboxSize.X);
         for (var i = 0; i < Plugin.Config.BattleTalkPatterns.Count; i++) {
             var pattern     = Plugin.Config.BattleTalkPatterns[i];
             var patternText = pattern.Pattern.ToString();
-            var textResult  = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
+
+            ImGui.PushItemWidth(inputWidth);
+            var textResult = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
+            ImGui.PopItemWidth();
 
             ImGui.SameLine();
             var show = pattern.ShowMessage;
-            if (ImGui.Checkbox("Show in chat", ref show)) {
+            if (ImGui.Checkbox(_showInChat, ref show)) {
                 pattern.ShowMessage = show;
                 Plugin.Config.Save();
             }
 
             ImGui.SameLine();
-            if (ImGui.Button($"Delete##{i}")) {
+            if (ImGui.Button($"{_delete}##{i}")) {
                 toRemove = i;
             }
 
@@ -155,6 +164,15 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
             Plugin.Config.BattleTalkPatterns.RemoveAt(toRemove.Value);
             Plugin.Config.Save();
         }
+    }
+
+    private static Vector2 GetButtonSize(string text) {
+        return ImGui.CalcTextSize(text) + ImGui.GetStyle().FramePadding * 4;
+    }
+
+    private static Vector2 GetCheckboxSize(string text) {
+        var textSize = ImGui.CalcTextSize(text);
+        return textSize with { X = textSize.X + ImGui.GetStyle().FramePadding.X * 3 + ImGui.GetFrameHeight(), };
     }
 }
 
