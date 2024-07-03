@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -16,24 +17,21 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
     public override void Draw() {
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
 
-        if (!ImGui.BeginTabBar("burnt-toast-tabs")) {
+        using var tabBar = ImRaii.TabBar("burnt-toast-tabs");
+        if (!tabBar) {
             return;
         }
 
-        if (ImGui.BeginTabItem("Toasts")) {
-            DrawToastTab();
-            ImGui.EndTabItem();
-        }
-
-        if (ImGui.BeginTabItem("Battle talk")) {
-            DrawBattleTalkTab();
-            ImGui.EndTabItem();
-        }
-
-        ImGui.EndTabBar();
+        DrawToastTab();
+        DrawBattleTalkTab();
     }
 
     private void DrawToastTab() {
+        using var toastTab = ImRaii.TabItem("Toasts");
+        if (!toastTab) {
+            return;
+        }
+
         ImGui.PushTextWrapPos();
         ImGui.TextUnformatted(
             "Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
@@ -74,9 +72,8 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
                 regex = new Regex(patternText, RegexOptions.Compiled);
             }
             catch (ArgumentException) {
-                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
+                using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
                 ImGui.TextUnformatted("Invalid regular expression.");
-                ImGui.PopStyleColor();
             }
 
             if (regex == null) {
@@ -94,6 +91,11 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
     }
 
     private void DrawBattleTalkTab() {
+        using var battleTalkTab = ImRaii.TabItem("Battle Talk");
+        if (!battleTalkTab) {
+            return;
+        }
+
         ImGui.PushTextWrapPos();
         ImGui.TextUnformatted(
             "Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
@@ -137,9 +139,8 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
                 regex = new Regex(patternText, RegexOptions.Compiled);
             }
             catch (ArgumentException) {
-                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
+                using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
                 ImGui.TextUnformatted("Invalid regular expression.");
-                ImGui.PopStyleColor();
             }
 
             if (regex == null) {
@@ -180,22 +181,21 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
         ImGui.Separator();
 
-        ImGui.BeginTabBar("burnt-toast-history-tabs");
-
-        if (ImGui.BeginTabItem("Toasts")) {
-            DrawToastHistory();
-            ImGui.EndTabItem();
+        using var tabBar = ImRaii.TabBar("burnt-toast-history-tabs");
+        if (!tabBar) {
+            return;
         }
 
-        if (ImGui.BeginTabItem("Battle Talk")) {
-            DrawBattleTalkHistory();
-            ImGui.EndTabItem();
-        }
-
-        ImGui.EndTabBar();
+        DrawToastHistory();
+        DrawBattleTalkHistory();
     }
 
     private void DrawToastHistory() {
+        using var toastTab = ImRaii.TabItem("Toasts");
+        if (!toastTab) {
+            return;
+        }
+
         ImGui.PushTextWrapPos();
         foreach (var (historyEntry, i) in history.ToastHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
@@ -207,6 +207,11 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
     }
 
     private void DrawBattleTalkHistory() {
+        using var battleTalkTab = ImRaii.TabItem("Battle Talk");
+        if (!battleTalkTab) {
+            return;
+        }
+
         ImGui.PushTextWrapPos();
         foreach (var (historyEntry, i) in history.BattleTalkHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
