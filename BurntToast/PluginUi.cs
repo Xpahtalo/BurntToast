@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Text;
-using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -12,10 +11,9 @@ using ImGuiNET;
 namespace BurntToast;
 
 public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings") {
-    private BurntToast Plugin { get; } = plugin;
-
-    private static string _delete     = "Delete";
-    private static string _showInChat = "Show in chat";
+    private static readonly string     _delete     = "Delete";
+    private static readonly string     _showInChat = "Show in chat";
+    private                 BurntToast Plugin { get; } = plugin;
 
     public override void Draw() {
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
@@ -177,6 +175,8 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 }
 
 public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toast History") {
+    private const           string  BlockedTooltip    = "\nBlocked by: ";
+    private const           string  SenderTooltip     = "\nSpoken by: ";
     private static readonly Vector4 Passed            = new(0f, 1f, 0f, 1f);
     private static readonly Vector4 HandledExternally = new(1f, 1f, 0f, 1f);
     private static readonly Vector4 Blocked           = new(1f, 0f, 0f, 1f);
@@ -189,9 +189,9 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
         ImGui.TextUnformatted("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
-            ColorEntry("Was not blocked by any regex.",              Passed);
-            ColorEntry("Ignored because another plugin handled it.", HandledExternally);
-            ColorEntry("Was blocked by a regex.",                    Blocked);
+            ImGuiExtensions.TextColored("Was not blocked by any regex.",              Passed);
+            ImGuiExtensions.TextColored("Ignored because another plugin handled it.", HandledExternally);
+            ImGuiExtensions.TextColored("Was blocked by a regex.",                    Blocked);
             ImGui.EndTooltip();
         }
 
@@ -217,7 +217,17 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
         ImGui.PushTextWrapPos();
         foreach (var (historyEntry, i) in history.ToastHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
-            DrawHistoryEntry(historyEntry);
+            var tooltip = new StringBuilder();
+            tooltip.Append(historyEntry.Timestamp);
+            if (historyEntry.HandledType == HandledType.Blocked) {
+                tooltip.Append(BlockedTooltip);
+                tooltip.Append(historyEntry.Regex);
+            }
+
+            if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
+                Plugin.Config.AddToastPattern(EscapeRegex(historyEntry.Message));
+            }
+
             ImGui.PopID();
         }
 
@@ -233,52 +243,48 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
         ImGui.PushTextWrapPos();
         foreach (var (historyEntry, i) in history.BattleTalkHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
-            DrawHistoryEntry(historyEntry);
+            var tooltip = new StringBuilder();
+            tooltip.Append(historyEntry.Timestamp);
+
+            if (!historyEntry.Sender.IsNullOrWhitespace()) {
+                tooltip.Append(SenderTooltip);
+                tooltip.Append(historyEntry.Sender);
+            }
+
+            if (historyEntry.HandledType == HandledType.Blocked) {
+                tooltip.Append(BlockedTooltip);
+                tooltip.Append(historyEntry.Regex);
+            }
+
+            if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
+                Plugin.Config.AddBattleTalkPattern(EscapeRegex(historyEntry.Message), true);
+            }
+
             ImGui.PopID();
         }
 
         ImGui.PopTextWrapPos();
     }
 
-    private void DrawHistoryEntry(HistoryEntry entry) {
-        var color = entry.HandledType switch {
+    private static bool DrawHistoryEntry(string text, string tooltip, HandledType handledType) {
+        var color = handledType switch {
             HandledType.HandledExternally => HandledExternally,
             HandledType.Blocked           => Blocked,
             _                             => Passed,
         };
 
-        ColorEntry(entry.Message, color);
+        ImGuiExtensions.TextColored(text, color);
 
-        if (ImGui.IsItemClicked() && (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl))) {
-            switch (entry) {
-                case ToastHistoryEntry:
-                    Plugin.Config.AddToastPattern(EscapeRegex(entry.Message));
-                    break;
-                case BattleTalkHistoryEntry:
-                    Plugin.Config.AddBattleTalkPattern(EscapeRegex(entry.Message), true);
-                    break;
-            }
-        }
+        var clicked = ImGui.IsItemClicked() &&
+                      (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl));
 
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
-            ImGui.TextUnformatted(entry.Timestamp.ToLocalTime().ToString(CultureInfo.CurrentCulture));
-            if (entry is BattleTalkHistoryEntry battleEntry && !battleEntry.Sender.IsNullOrWhitespace()) {
-                ImGui.TextUnformatted($"Spoken by: {battleEntry.Sender}");
-            }
-
-            if (entry.HandledType == HandledType.Blocked) {
-                ImGui.TextUnformatted($"Blocked by: {entry.Regex}");
-            }
-
+            ImGui.TextUnformatted(tooltip);
             ImGui.EndTooltip();
         }
-    }
 
-    private static void ColorEntry(string text, Vector4 color) {
-        ImGui.PushStyleColor(ImGuiCol.Text, color);
-        ImGui.TextUnformatted(text);
-        ImGui.PopStyleColor();
+        return clicked;
     }
 
     // Not using Regex.Escape because it escapes whitespace, which is unnecessary for our use-case, and ugly for the user.

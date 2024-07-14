@@ -21,31 +21,23 @@ public class History {
         if (BattleTalkHistory.Count >= HistoryCapacity) {
             BattleTalkHistory.Dequeue();
         }
-        
+
         BattleTalkHistory.Enqueue(historyEntry);
     }
 }
 
-internal record HistoryEntry(
+internal record BattleTalkHistoryEntry(
+    string      Sender,
     string      Message,
     DateTime    Timestamp,
     HandledType HandledType,
     string      Regex);
 
-internal record BattleTalkHistoryEntry : HistoryEntry {
-    internal readonly string Sender;
-
-    internal BattleTalkHistoryEntry(string Sender, string Message, DateTime Timestamp, HandledType HandledType,
-                                    string Regex)
-        : base(Message, Timestamp, HandledType, Regex) {
-        this.Sender = Sender;
-    }
-}
-
-internal record ToastHistoryEntry : HistoryEntry {
-    internal ToastHistoryEntry(string Message, DateTime Timestamp, HandledType HandledType, string Regex)
-        : base(Message, Timestamp, HandledType, Regex) { }
-}
+internal record ToastHistoryEntry(
+    string      Message,
+    DateTime    Timestamp,
+    HandledType HandledType,
+    string      Regex);
 
 internal enum HandledType {
     Passed,
