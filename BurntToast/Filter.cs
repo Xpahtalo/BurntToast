@@ -28,13 +28,10 @@ public sealed class Filter : IDisposable {
         Plugin.ToastGui.ErrorToast += OnErrorToast;
 
         try {
-            _showBattleTalkHook = interop.HookFromAddress<ShowBattleTalk>(
-                UIModule.StaticVirtualTablePointer->ShowBattleTalk, ShowBattleTalk);
+            _showBattleTalkHook = interop.HookFromAddress<ShowBattleTalk>(UIModule.StaticVirtualTablePointer->ShowBattleTalk, ShowBattleTalk);
             _showBattleTalkHook.Enable();
         } catch (Exception ex) {
-            Plugin.Log.Error(
-                ex,
-                "Failed to hook ShowBattleTalk. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalk. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
             throw;
         }
 
@@ -44,8 +41,7 @@ public sealed class Filter : IDisposable {
             _showBattleTalkImageHook.Enable();
         } catch (Exception ex) {
             Plugin.Log.Error(
-                ex,
-                "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
+                ex, "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
         }
 
         try {
@@ -54,8 +50,7 @@ public sealed class Filter : IDisposable {
             _showBattleTalkSoundHook.Enable();
         } catch (Exception ex) {
             Plugin.Log.Error(
-                ex,
-                "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
+                ex, "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
         }
     }
 
@@ -70,23 +65,17 @@ public sealed class Filter : IDisposable {
     }
 
     private unsafe void ShowBattleTalk(UIModule* self, byte* sender, byte* talk, float duration, byte style) {
-        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Standard)) {
-            _showBattleTalkHook!.Original(self, sender, talk, duration, style);
-        }
+        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Standard)) { _showBattleTalkHook!.Original(self, sender, talk, duration, style); }
     }
 
-    private unsafe void ShowBattleTalkImage(
-        UIModule* self, byte* sender, byte* talk, float duration, uint image, byte style, int sound, uint entityId) {
+    private unsafe void ShowBattleTalkImage(UIModule* self, byte* sender, byte* talk, float duration, uint image, byte style, int sound, uint entityId) {
         if (!ApplyBattleTalkFilter(sender, talk, TalkType.Image)) {
             _showBattleTalkImageHook!.Original(self, sender, talk, duration, image, style, sound, entityId);
         }
     }
 
-    private unsafe void ShowBattleTalkSound(
-        UIModule* self, byte* sender, byte* talk, float duration, int sound, byte style) {
-        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Sound)) {
-            _showBattleTalkSoundHook!.Original(self, sender, talk, duration, sound, style);
-        }
+    private unsafe void ShowBattleTalkSound(UIModule* self, byte* sender, byte* talk, float duration, int sound, byte style) {
+        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Sound)) { _showBattleTalkSoundHook!.Original(self, sender, talk, duration, sound, style); }
     }
 
     private void OnToast(ref SeString message, ref ToastOptions options, ref bool isHandled) {
@@ -103,6 +92,7 @@ public sealed class Filter : IDisposable {
 
     private unsafe bool ApplyBattleTalkFilter(byte* senderString, byte* talkString, TalkType type) {
         var shouldBlock = false;
+
         try {
             var sender = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(senderString)).TextValue;
             var talk   = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(talkString)).TextValue;
@@ -111,9 +101,7 @@ public sealed class Filter : IDisposable {
             var history = new BattleTalkHistoryEntry(sender, talk, DateTime.UtcNow, handled, pattern);
             History.AddBattleTalkHistory(history);
 
-            if (showMessage) {
-                Plugin.ChatGui.Print(new XivChatEntry { Type = (XivChatType)68, Name = sender, Message = talk, });
-            }
+            if (showMessage) { Plugin.ChatGui.Print(new XivChatEntry { Type = (XivChatType)68, Name = sender, Message = talk, }); }
 
             shouldBlock = handled == HandledType.Blocked;
         } catch (Exception ex) { Plugin.Log.Error(ex, $"Failed to handle BattleTalk of type {type}"); }
@@ -130,14 +118,12 @@ public sealed class Filter : IDisposable {
         var (pattern, handled) = FindPatternMatch(message, Plugin.Config.Patterns);
         var history = new ToastHistoryEntry(message, DateTime.UtcNow, handled, pattern);
         History.AddToastHistory(history);
+        isHandled = handled == HandledType.Blocked;
     }
 
-    internal static (string pattern, HandledType, bool showMessage) FindBattleTalkMatch(
-        string message, IEnumerable<BattleTalkPattern> patterns) {
+    internal static (string pattern, HandledType, bool showMessage) FindBattleTalkMatch(string message, IEnumerable<BattleTalkPattern> patterns) {
         foreach (var pattern in patterns) {
-            if (PatternMatches(message, pattern.Pattern)) {
-                return (pattern.Pattern.ToString(), HandledType.Blocked, pattern.ShowMessage);
-            }
+            if (PatternMatches(message, pattern.Pattern)) { return (pattern.Pattern.ToString(), HandledType.Blocked, pattern.ShowMessage); }
         }
         return ("", HandledType.Passed, false);
     }
