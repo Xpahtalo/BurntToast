@@ -21,7 +21,7 @@ public class Configuration : IPluginConfiguration {
 
     internal void AddToastPattern(Regex regex) {
         Patterns.Add(regex);
-        Save();
+        if (!string.IsNullOrWhiteSpace(regex.ToString())) { Save(); }
     }
 
     internal void AddBattleTalkPattern(string message, bool showMessage) {
@@ -30,7 +30,7 @@ public class Configuration : IPluginConfiguration {
 
     internal void AddBattleTalkPattern(Regex regex, bool showMessage) {
         BattleTalkPatterns.Add(new BattleTalkPattern(regex, showMessage));
-        Save();
+        if (!string.IsNullOrWhiteSpace(regex.ToString())) { Save(); }
     }
 
     internal void Initialise(BurntToast plugin) {
@@ -43,12 +43,10 @@ public class Configuration : IPluginConfiguration {
 }
 
 [Serializable]
-public class BattleTalkPattern {
-    public BattleTalkPattern(Regex pattern, bool showMessage) {
-        Pattern     = pattern;
-        ShowMessage = showMessage;
-    }
+public class BattleTalkPattern(Regex pattern, bool showMessage) {
+    public Regex Pattern     { get; set; } = pattern;
+    public bool  ShowMessage { get; set; } = showMessage;
 
-    public Regex Pattern     { get; set; }
-    public bool  ShowMessage { get; set; }
+    public BattleTalkPattern(string pattern, bool showMessage) : this(
+        new Regex(pattern, RegexOptions.Compiled), showMessage) { }
 }

@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Dalamud.Utility;
 using ImGuiNET;
 
 namespace BurntToast;
@@ -19,9 +18,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
 
         using var tabBar = ImRaii.TabBar("burnt-toast-tabs");
-        if (!tabBar) {
-            return;
-        }
+        if (!tabBar) { return; }
 
         DrawToastTab();
         DrawBattleTalkTab();
@@ -29,24 +26,22 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
     private void DrawToastTab() {
         using var toastTab = ImRaii.TabItem("Toasts");
-        if (!toastTab) {
-            return;
-        }
+
+        if (!toastTab) { return; }
 
         ImGui.PushTextWrapPos();
         ImGui.TextUnformatted(
             "Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
 
-        if (ImGui.Button("Add")) {
-            Plugin.Config.AddToastPattern("");
-        }
+        if (ImGui.Button("Add")) { Plugin.Config.AddToastPattern(""); }
 
         ImGui.Separator();
 
         int? toRemove = null;
 
         var inputWidth = -GetButtonSize(_delete).X;
+
         for (var i = 0; i < Plugin.Config.Patterns.Count; i++) {
             var pattern     = Plugin.Config.Patterns[i];
             var patternText = pattern.ToString();
@@ -55,36 +50,20 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
             var textResult = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
             ImGui.PopItemWidth();
 
+            if (textResult && !string.IsNullOrWhiteSpace(patternText)) {
+                Regex? regex = null;
+                try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
+                    using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
+                    ImGui.TextUnformatted("Invalid regular expression.");
+                }
+                if (regex is not null) {
+                    Plugin.Config.Patterns[i] = regex;
+                    Plugin.Config.Save();
+                }
+            }
             ImGui.SameLine();
-            if (ImGui.Button($"{_delete}##{i}")) {
-                toRemove = i;
-            }
-
-            if (!textResult) {
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(patternText)) {
-                continue;
-            }
-
-            Regex? regex = null;
-            try {
-                regex = new Regex(patternText, RegexOptions.Compiled);
-            }
-            catch (ArgumentException) {
-                using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
-                ImGui.TextUnformatted("Invalid regular expression.");
-            }
-
-            if (regex == null) {
-                continue;
-            }
-
-            Plugin.Config.Patterns[i] = regex;
-            Plugin.Config.Save();
+            if (ImGui.Button($"{_delete}##{i}")) { toRemove = i; }
         }
-
         if (toRemove != null) {
             Plugin.Config.Patterns.RemoveAt(toRemove.Value);
             Plugin.Config.Save();
@@ -93,26 +72,20 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
     private void DrawBattleTalkTab() {
         using var battleTalkTab = ImRaii.TabItem("Battle Talk");
-        if (!battleTalkTab) {
-            return;
-        }
+        if (!battleTalkTab) { return; }
 
         ImGui.PushTextWrapPos();
         ImGui.TextUnformatted(
             "Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
-
-        if (ImGui.Button("Add")) {
-            Plugin.Config.AddBattleTalkPattern("", true);
-        }
-
+        if (ImGui.Button("Add")) { Plugin.Config.AddBattleTalkPattern("", true); }
         ImGui.Separator();
 
-        int? toRemove = null;
+        int? toRemove         = null;
+        var  deleteButtonSize = GetButtonSize(_delete);
+        var  showCheckboxSize = GetCheckboxSize(_showInChat);
+        var  inputWidth       = -(deleteButtonSize.X + showCheckboxSize.X);
 
-        var deleteButtonSize = GetButtonSize(_delete);
-        var showCheckboxSize = GetCheckboxSize(_showInChat);
-        var inputWidth       = -(deleteButtonSize.X + showCheckboxSize.X);
         for (var i = 0; i < Plugin.Config.BattleTalkPatterns.Count; i++) {
             var pattern     = Plugin.Config.BattleTalkPatterns[i];
             var patternText = pattern.Pattern.ToString();
@@ -121,44 +94,27 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
             var textResult = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
             ImGui.PopItemWidth();
 
+            if (textResult && !string.IsNullOrWhiteSpace(patternText)) {
+                Regex? regex = null;
+                try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
+                    using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
+                    ImGui.TextUnformatted("Invalid regular expression.");
+                }
+                if (regex is not null) {
+                    pattern.Pattern = regex;
+                    Plugin.Config.Save();
+                }
+            }
             ImGui.SameLine();
             var show = pattern.ShowMessage;
             if (ImGui.Checkbox(_showInChat, ref show)) {
                 pattern.ShowMessage = show;
                 Plugin.Config.Save();
             }
-
             ImGui.SameLine();
-            if (ImGui.Button($"{_delete}##{i}")) {
-                toRemove = i;
-            }
-
-            if (!textResult) {
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(patternText)) {
-                continue;
-            }
-
-            Regex? regex = null;
-            try {
-                regex = new Regex(patternText, RegexOptions.Compiled);
-            }
-            catch (ArgumentException) {
-                using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
-                ImGui.TextUnformatted("Invalid regular expression.");
-            }
-
-            if (regex == null) {
-                continue;
-            }
-
-            pattern.Pattern = regex;
-            Plugin.Config.Save();
+            if (ImGui.Button($"{_delete}##{i}")) { toRemove = i; }
         }
-
-        if (toRemove != null) {
+        if (toRemove is not null) {
             Plugin.Config.BattleTalkPatterns.RemoveAt(toRemove.Value);
             Plugin.Config.Save();
         }
@@ -185,7 +141,6 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
     public override void Draw() {
         ImGui.PushTextWrapPos();
-
         ImGui.TextUnformatted("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
@@ -194,15 +149,12 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
             ImGuiExtensions.TextColored("Was blocked by a regex.",                    Blocked);
             ImGui.EndTooltip();
         }
-
         ImGui.PopTextWrapPos();
 
         ImGui.Separator();
 
         using var tabBar = ImRaii.TabBar("burnt-toast-history-tabs");
-        if (!tabBar) {
-            return;
-        }
+        if (!tabBar) { return; }
 
         DrawToastHistory();
         DrawBattleTalkHistory();
@@ -210,9 +162,7 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
     private void DrawToastHistory() {
         using var toastTab = ImRaii.TabItem("Toasts");
-        if (!toastTab) {
-            return;
-        }
+        if (!toastTab) { return; }
 
         ImGui.PushTextWrapPos();
         foreach (var (historyEntry, i) in history.ToastHistory.Reverse().Select((x, i) => (x, i))) {
@@ -223,46 +173,36 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
                 tooltip.Append(BlockedTooltip);
                 tooltip.Append(historyEntry.Regex);
             }
-
             if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
                 Plugin.Config.AddToastPattern(EscapeRegex(historyEntry.Message));
             }
-
             ImGui.PopID();
         }
-
         ImGui.PopTextWrapPos();
     }
 
     private void DrawBattleTalkHistory() {
         using var battleTalkTab = ImRaii.TabItem("Battle Talk");
-        if (!battleTalkTab) {
-            return;
-        }
+        if (!battleTalkTab) { return; }
 
         ImGui.PushTextWrapPos();
         foreach (var (historyEntry, i) in history.BattleTalkHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             var tooltip = new StringBuilder();
             tooltip.Append(historyEntry.Timestamp);
-
-            if (!historyEntry.Sender.IsNullOrWhitespace()) {
+            if (!string.IsNullOrWhiteSpace(historyEntry.Sender)) {
                 tooltip.Append(SenderTooltip);
                 tooltip.Append(historyEntry.Sender);
             }
-
             if (historyEntry.HandledType == HandledType.Blocked) {
                 tooltip.Append(BlockedTooltip);
                 tooltip.Append(historyEntry.Regex);
             }
-
             if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
                 Plugin.Config.AddBattleTalkPattern(EscapeRegex(historyEntry.Message), true);
             }
-
             ImGui.PopID();
         }
-
         ImGui.PopTextWrapPos();
     }
 
@@ -277,69 +217,68 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
         var clicked = ImGui.IsItemClicked() &&
                       (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl));
-
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
             ImGui.TextUnformatted(tooltip);
             ImGui.EndTooltip();
         }
-
         return clicked;
     }
 
     // Not using Regex.Escape because it escapes whitespace, which is unnecessary for our use-case, and ugly for the user.
     private static string EscapeRegex(ReadOnlySpan<char> input) {
         var sb = new StringBuilder(input.Length * 2);
+
         foreach (var ch in input) {
             switch (ch) {
-                case '\\':
-                    sb.Append(@"\\");
-                    break;
-                case '*':
-                    sb.Append(@"\*");
-                    break;
-                case '+':
-                    sb.Append(@"\+");
-                    break;
-                case '?':
-                    sb.Append(@"\?");
-                    break;
-                case '|':
-                    sb.Append(@"\|");
-                    break;
-                case '{':
-                    sb.Append(@"\{");
-                    break;
-                case '}':
-                    sb.Append(@"\}");
-                    break;
-                case '[':
-                    sb.Append(@"\[");
-                    break;
-                case ']':
-                    sb.Append(@"\]");
-                    break;
-                case '(':
-                    sb.Append(@"\(");
-                    break;
-                case ')':
-                    sb.Append(@"\)");
-                    break;
-                case '^':
-                    sb.Append(@"\^");
-                    break;
-                case '$':
-                    sb.Append(@"\$");
-                    break;
-                case '.':
-                    sb.Append(@"\.");
-                    break;
-                case '#':
-                    sb.Append(@"\#");
-                    break;
-                default:
-                    sb.Append(ch);
-                    break;
+            case '\\':
+                sb.Append(@"\\");
+                break;
+            case '*':
+                sb.Append(@"\*");
+                break;
+            case '+':
+                sb.Append(@"\+");
+                break;
+            case '?':
+                sb.Append(@"\?");
+                break;
+            case '|':
+                sb.Append(@"\|");
+                break;
+            case '{':
+                sb.Append(@"\{");
+                break;
+            case '}':
+                sb.Append(@"\}");
+                break;
+            case '[':
+                sb.Append(@"\[");
+                break;
+            case ']':
+                sb.Append(@"\]");
+                break;
+            case '(':
+                sb.Append(@"\(");
+                break;
+            case ')':
+                sb.Append(@"\)");
+                break;
+            case '^':
+                sb.Append(@"\^");
+                break;
+            case '$':
+                sb.Append(@"\$");
+                break;
+            case '.':
+                sb.Append(@"\.");
+                break;
+            case '#':
+                sb.Append(@"\#");
+                break;
+            default:
+                sb.Append(ch);
+                break;
             }
         }
 
