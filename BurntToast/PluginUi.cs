@@ -18,10 +18,12 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         ImGui.SetNextWindowSize(new Vector2(450, 200), ImGuiCond.FirstUseEver);
 
         using var tabBar = ImRaii.TabBar("burnt-toast-tabs");
+
         if (!tabBar) { return; }
 
         DrawToastTab();
         DrawBattleTalkTab();
+        DrawGimmickTab();
     }
 
     private void DrawToastTab() {
@@ -30,8 +32,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         if (!toastTab) { return; }
 
         ImGui.PushTextWrapPos();
-        ImGui.TextUnformatted(
-            "Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
+        ImGui.TextUnformatted("Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
 
         if (ImGui.Button("Add")) { Plugin.Config.AddToastPattern(""); }
@@ -52,18 +53,22 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
             if (textResult && !string.IsNullOrWhiteSpace(patternText)) {
                 Regex? regex = null;
+
                 try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
                     using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
                     ImGui.TextUnformatted("Invalid regular expression.");
                 }
+
                 if (regex is not null) {
                     Plugin.Config.Patterns[i] = regex;
                     Plugin.Config.Save();
                 }
             }
             ImGui.SameLine();
+
             if (ImGui.Button($"{_delete}##{i}")) { toRemove = i; }
         }
+
         if (toRemove != null) {
             Plugin.Config.Patterns.RemoveAt(toRemove.Value);
             Plugin.Config.Save();
@@ -72,12 +77,13 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
     private void DrawBattleTalkTab() {
         using var battleTalkTab = ImRaii.TabItem("Battle Talk");
+
         if (!battleTalkTab) { return; }
 
         ImGui.PushTextWrapPos();
-        ImGui.TextUnformatted(
-            "Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
+        ImGui.TextUnformatted("Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
+
         if (ImGui.Button("Add")) { Plugin.Config.AddBattleTalkPattern("", true); }
         ImGui.Separator();
 
@@ -96,10 +102,12 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
             if (textResult && !string.IsNullOrWhiteSpace(patternText)) {
                 Regex? regex = null;
+
                 try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
                     using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
                     ImGui.TextUnformatted("Invalid regular expression.");
                 }
+
                 if (regex is not null) {
                     pattern.Pattern = regex;
                     Plugin.Config.Save();
@@ -107,15 +115,67 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
             }
             ImGui.SameLine();
             var show = pattern.ShowMessage;
+
             if (ImGui.Checkbox(_showInChat, ref show)) {
                 pattern.ShowMessage = show;
                 Plugin.Config.Save();
             }
             ImGui.SameLine();
+
             if (ImGui.Button($"{_delete}##{i}")) { toRemove = i; }
         }
+
         if (toRemove is not null) {
             Plugin.Config.BattleTalkPatterns.RemoveAt(toRemove.Value);
+            Plugin.Config.Save();
+        }
+    }
+
+    private void DrawGimmickTab() {
+        using var gimmickTab = ImRaii.TabItem("Gimmicks");
+
+        if (!gimmickTab) { return; }
+
+        ImGui.PushTextWrapPos();
+        ImGui.TextUnformatted("Add regular expressions to filter below. Any gimmick matching a regular expression on the list will be hidden.");
+        ImGui.PopTextWrapPos();
+
+        if (ImGui.Button("Add")) { Plugin.Config.AddGimmickPattern(""); }
+
+        ImGui.Separator();
+
+        int? toRemove = null;
+
+        var inputWidth = -GetButtonSize(_delete).X;
+
+        for (var i = 0; i < Plugin.Config.GimmickPatterns.Count; i++) {
+            var pattern     = Plugin.Config.GimmickPatterns[i];
+            var patternText = pattern.ToString();
+
+            ImGui.PushItemWidth(inputWidth);
+            var textResult = ImGui.InputText($"##pattern-{i}", ref patternText, 250);
+            ImGui.PopItemWidth();
+
+            if (textResult && !string.IsNullOrWhiteSpace(patternText)) {
+                Regex? regex = null;
+
+                try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
+                    using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
+                    ImGui.TextUnformatted("Invalid regular expression.");
+                }
+
+                if (regex is not null) {
+                    Plugin.Config.GimmickPatterns[i] = regex;
+                    Plugin.Config.Save();
+                }
+            }
+            ImGui.SameLine();
+
+            if (ImGui.Button($"{_delete}##{i}")) { toRemove = i; }
+        }
+
+        if (toRemove != null) {
+            Plugin.Config.GimmickPatterns.RemoveAt(toRemove.Value);
             Plugin.Config.Save();
         }
     }
@@ -142,6 +202,7 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
     public override void Draw() {
         ImGui.PushTextWrapPos();
         ImGui.TextUnformatted("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
+
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
             ImGuiExtensions.TextColored("Was not blocked by any regex.",              Passed);
@@ -154,25 +215,31 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
         ImGui.Separator();
 
         using var tabBar = ImRaii.TabBar("burnt-toast-history-tabs");
+
         if (!tabBar) { return; }
 
         DrawToastHistory();
         DrawBattleTalkHistory();
+        DrawGimmickHistory();
     }
 
     private void DrawToastHistory() {
         using var toastTab = ImRaii.TabItem("Toasts");
+
         if (!toastTab) { return; }
 
         ImGui.PushTextWrapPos();
+
         foreach (var (historyEntry, i) in history.ToastHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             var tooltip = new StringBuilder();
             tooltip.Append(historyEntry.Timestamp);
+
             if (historyEntry.HandledType == HandledType.Blocked) {
                 tooltip.Append(BlockedTooltip);
                 tooltip.Append(historyEntry.Regex);
             }
+
             if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
                 Plugin.Config.AddToastPattern(EscapeRegex(historyEntry.Message));
             }
@@ -183,23 +250,53 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
     private void DrawBattleTalkHistory() {
         using var battleTalkTab = ImRaii.TabItem("Battle Talk");
+
         if (!battleTalkTab) { return; }
 
         ImGui.PushTextWrapPos();
+
         foreach (var (historyEntry, i) in history.BattleTalkHistory.Reverse().Select((x, i) => (x, i))) {
             ImGui.PushID(i);
             var tooltip = new StringBuilder();
             tooltip.Append(historyEntry.Timestamp);
+
             if (!string.IsNullOrWhiteSpace(historyEntry.Sender)) {
                 tooltip.Append(SenderTooltip);
                 tooltip.Append(historyEntry.Sender);
             }
+
             if (historyEntry.HandledType == HandledType.Blocked) {
                 tooltip.Append(BlockedTooltip);
                 tooltip.Append(historyEntry.Regex);
             }
+
             if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
                 Plugin.Config.AddBattleTalkPattern(EscapeRegex(historyEntry.Message), true);
+            }
+            ImGui.PopID();
+        }
+        ImGui.PopTextWrapPos();
+    }
+
+    private void DrawGimmickHistory() {
+        using var gimmickTab = ImRaii.TabItem("Gimmicks");
+
+        if (!gimmickTab) { return; }
+
+        ImGui.PushTextWrapPos();
+
+        foreach (var (historyEntry, i) in history.GimmickHistory.Reverse().Select((x, i) => (x, i))) {
+            ImGui.PushID(i);
+            var tooltip = new StringBuilder();
+            tooltip.Append(historyEntry.Timestamp);
+
+            if (historyEntry.HandledType == HandledType.Blocked) {
+                tooltip.Append(BlockedTooltip);
+                tooltip.Append(historyEntry.Regex);
+            }
+
+            if (DrawHistoryEntry(historyEntry.Message, tooltip.ToString(), historyEntry.HandledType)) {
+                Plugin.Config.AddGimmickPattern(EscapeRegex(historyEntry.Message));
             }
             ImGui.PopID();
         }
@@ -215,8 +312,8 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
         ImGuiExtensions.TextColored(text, color);
 
-        var clicked = ImGui.IsItemClicked() &&
-                      (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl));
+        var clicked = ImGui.IsItemClicked() && (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl));
+
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
             ImGui.TextUnformatted(tooltip);
@@ -231,54 +328,22 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
         foreach (var ch in input) {
             switch (ch) {
-            case '\\':
-                sb.Append(@"\\");
-                break;
-            case '*':
-                sb.Append(@"\*");
-                break;
-            case '+':
-                sb.Append(@"\+");
-                break;
-            case '?':
-                sb.Append(@"\?");
-                break;
-            case '|':
-                sb.Append(@"\|");
-                break;
-            case '{':
-                sb.Append(@"\{");
-                break;
-            case '}':
-                sb.Append(@"\}");
-                break;
-            case '[':
-                sb.Append(@"\[");
-                break;
-            case ']':
-                sb.Append(@"\]");
-                break;
-            case '(':
-                sb.Append(@"\(");
-                break;
-            case ')':
-                sb.Append(@"\)");
-                break;
-            case '^':
-                sb.Append(@"\^");
-                break;
-            case '$':
-                sb.Append(@"\$");
-                break;
-            case '.':
-                sb.Append(@"\.");
-                break;
-            case '#':
-                sb.Append(@"\#");
-                break;
-            default:
-                sb.Append(ch);
-                break;
+            case '\\': sb.Append(@"\\"); break;
+            case '*':  sb.Append(@"\*"); break;
+            case '+':  sb.Append(@"\+"); break;
+            case '?':  sb.Append(@"\?"); break;
+            case '|':  sb.Append(@"\|"); break;
+            case '{':  sb.Append(@"\{"); break;
+            case '}':  sb.Append(@"\}"); break;
+            case '[':  sb.Append(@"\["); break;
+            case ']':  sb.Append(@"\]"); break;
+            case '(':  sb.Append(@"\("); break;
+            case ')':  sb.Append(@"\)"); break;
+            case '^':  sb.Append(@"\^"); break;
+            case '$':  sb.Append(@"\$"); break;
+            case '.':  sb.Append(@"\."); break;
+            case '#':  sb.Append(@"\#"); break;
+            default:   sb.Append(ch); break;
             }
         }
 

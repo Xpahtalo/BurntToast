@@ -14,6 +14,8 @@ public class Configuration : IPluginConfiguration {
 
     public List<BattleTalkPattern> BattleTalkPatterns { get; set; } = new();
 
+    public List<Regex> GimmickPatterns { get; set; } = new();
+
     public int Version { get; set; } = 1;
 
     internal void AddToastPattern(string message) {
@@ -32,6 +34,16 @@ public class Configuration : IPluginConfiguration {
 
     internal void AddBattleTalkPattern(Regex regex, bool showMessage) {
         BattleTalkPatterns.Add(new BattleTalkPattern(regex, showMessage));
+
+        if (!string.IsNullOrWhiteSpace(regex.ToString())) { Save(); }
+    }
+
+    internal void AddGimmickPattern(string message) {
+        AddGimmickPattern(new Regex(message));
+    }
+
+    internal void AddGimmickPattern(Regex regex) {
+        GimmickPatterns.Add(regex);
 
         if (!string.IsNullOrWhiteSpace(regex.ToString())) { Save(); }
     }

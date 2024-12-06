@@ -8,6 +8,7 @@ public class History {
 
     internal Queue<BattleTalkHistoryEntry> BattleTalkHistory { get; } = new(HistoryCapacity);
     internal Queue<ToastHistoryEntry>      ToastHistory      { get; } = new(HistoryCapacity);
+    internal Queue<GimmickHistoryEntry>    GimmickHistory    { get; } = new(HistoryCapacity);
 
     internal void AddToastHistory(ToastHistoryEntry entry) {
         if (ToastHistory.Count >= HistoryCapacity) { ToastHistory.Dequeue(); }
@@ -18,16 +19,18 @@ public class History {
         if (BattleTalkHistory.Count >= HistoryCapacity) { BattleTalkHistory.Dequeue(); }
         BattleTalkHistory.Enqueue(historyEntry);
     }
+
+    internal void AddGimmickHistory(GimmickHistoryEntry entry) {
+        if (GimmickHistory.Count >= HistoryCapacity) { GimmickHistory.Dequeue(); }
+        GimmickHistory.Enqueue(entry);
+    }
 }
 
-internal record BattleTalkHistoryEntry(
-    string      Sender,
-    string      Message,
-    DateTime    Timestamp,
-    HandledType HandledType,
-    string      Regex);
+internal record BattleTalkHistoryEntry(string Sender, string Message, DateTime Timestamp, HandledType HandledType, string Regex);
 
 internal record ToastHistoryEntry(string Message, DateTime Timestamp, HandledType HandledType, string Regex);
+
+internal record GimmickHistoryEntry(string Message, DateTime Timestamp, HandledType HandledType, string Regex);
 
 public enum HandledType {
     Passed, HandledExternally, Blocked,

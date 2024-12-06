@@ -8,6 +8,7 @@ using Dalamud.Hooking;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using static FFXIVClientStructs.FFXIV.Client.UI.RaptureAtkModule.Delegates;
 using static FFXIVClientStructs.FFXIV.Client.UI.UIModule.Delegates;
 
 namespace BurntToast;
@@ -16,6 +17,7 @@ public sealed class Filter : IDisposable {
     private readonly Hook<ShowBattleTalk>?      _showBattleTalkHook;
     private readonly Hook<ShowBattleTalkImage>? _showBattleTalkImageHook;
     private readonly Hook<ShowBattleTalkSound>? _showBattleTalkSoundHook;
+    private readonly Hook<ShowTextGimmickHint>? _showTextGimmickHint;
 
     private BurntToast Plugin  { get; }
     private History    History { get; }
@@ -31,7 +33,7 @@ public sealed class Filter : IDisposable {
             _showBattleTalkHook = interop.HookFromAddress<ShowBattleTalk>(UIModule.StaticVirtualTablePointer->ShowBattleTalk, ShowBattleTalk);
             _showBattleTalkHook.Enable();
         } catch (Exception ex) {
-            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalk. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
+            Plugin.Log.Error(ex, "Failed to hook ShowBattleTalk. Some battle talks may not get filtered.");
             throw;
         }
 
@@ -39,19 +41,19 @@ public sealed class Filter : IDisposable {
             _showBattleTalkImageHook = interop.HookFromAddress<ShowBattleTalkImage>(
                 UIModule.StaticVirtualTablePointer->ShowBattleTalkImage, ShowBattleTalkImage);
             _showBattleTalkImageHook.Enable();
-        } catch (Exception ex) {
-            Plugin.Log.Error(
-                ex, "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
-        }
+        } catch (Exception ex) { Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkImage. Some battle talks may not get filtered."); }
 
         try {
             _showBattleTalkSoundHook = interop.HookFromAddress<ShowBattleTalkSound>(
                 UIModule.StaticVirtualTablePointer->ShowBattleTalkSound, ShowBattleTalkSound);
             _showBattleTalkSoundHook.Enable();
-        } catch (Exception ex) {
-            Plugin.Log.Error(
-                ex, "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered. Please send feedback through the plugin installer.");
-        }
+        } catch (Exception ex) { Plugin.Log.Error(ex, "Failed to hook ShowBattleTalkSound. Some battle talks may not get filtered."); }
+
+        try {
+            _showTextGimmickHint = interop.HookFromAddress<ShowTextGimmickHint>(
+                RaptureAtkModule.MemberFunctionPointers.ShowTextGimmickHint, ShowTextGimmickHint);
+            _showTextGimmickHint.Enable();
+        } catch (Exception ex) { Plugin.Log.Error(ex, "Failed to hook ConvertLogMessageIdToScreenLogKind. LogMessage toasts will not get filtered."); }
     }
 
     public void Dispose() {
@@ -62,6 +64,7 @@ public sealed class Filter : IDisposable {
         _showBattleTalkHook?.Dispose();
         _showBattleTalkImageHook?.Dispose();
         _showBattleTalkSoundHook?.Dispose();
+        _showTextGimmickHint?.Dispose();
     }
 
     private unsafe void ShowBattleTalk(UIModule* self, byte* sender, byte* talk, float duration, byte style) {
@@ -119,6 +122,16 @@ public sealed class Filter : IDisposable {
         var history = new ToastHistoryEntry(message, DateTime.UtcNow, handled, pattern);
         History.AddToastHistory(history);
         isHandled = handled == HandledType.Blocked;
+    }
+
+    private unsafe void ShowTextGimmickHint(RaptureAtkModule* self, byte* text, RaptureAtkModule.TextGimmickHintStyle style, int duration) {
+        var message = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(text)).TextValue;
+
+        var (pattern, handled) = FindPatternMatch(message, Plugin.Config.GimmickPatterns);
+        var history = new GimmickHistoryEntry(message, DateTime.UtcNow, handled, pattern);
+        History.AddGimmickHistory(history);
+
+        if (handled == HandledType.Passed) { _showTextGimmickHint!.Original(self, text, style, duration); }
     }
 
     internal static (string pattern, HandledType, bool showMessage) FindBattleTalkMatch(string message, IEnumerable<BattleTalkPattern> patterns) {
