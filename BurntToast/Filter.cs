@@ -10,6 +10,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using static FFXIVClientStructs.FFXIV.Client.UI.RaptureAtkModule.Delegates;
 using static FFXIVClientStructs.FFXIV.Client.UI.UIModule.Delegates;
+using InteropGenerator.Runtime;
 
 namespace BurntToast;
 
@@ -67,17 +68,17 @@ public sealed class Filter : IDisposable {
         _showTextGimmickHint?.Dispose();
     }
 
-    private unsafe void ShowBattleTalk(UIModule* self, byte* sender, byte* talk, float duration, byte style) {
+    private unsafe void ShowBattleTalk(UIModule* self, CStringPointer sender, CStringPointer talk, float duration, byte style) {
         if (!ApplyBattleTalkFilter(sender, talk, TalkType.Standard)) { _showBattleTalkHook!.Original(self, sender, talk, duration, style); }
     }
 
-    private unsafe void ShowBattleTalkImage(UIModule* self, byte* sender, byte* talk, float duration, uint image, byte style, int sound, uint entityId) {
+    private unsafe void ShowBattleTalkImage(UIModule* self, CStringPointer sender, CStringPointer talk, float duration, uint image, byte style, int sound, uint entityId) {
         if (!ApplyBattleTalkFilter(sender, talk, TalkType.Image)) {
             _showBattleTalkImageHook!.Original(self, sender, talk, duration, image, style, sound, entityId);
         }
     }
 
-    private unsafe void ShowBattleTalkSound(UIModule* self, byte* sender, byte* talk, float duration, int sound, byte style) {
+    private unsafe void ShowBattleTalkSound(UIModule* self, CStringPointer sender, CStringPointer talk, float duration, int sound, byte style) {
         if (!ApplyBattleTalkFilter(sender, talk, TalkType.Sound)) { _showBattleTalkSoundHook!.Original(self, sender, talk, duration, sound, style); }
     }
 
@@ -93,13 +94,10 @@ public sealed class Filter : IDisposable {
         ApplyToastFilter(message.TextValue, ref isHandled);
     }
 
-    private unsafe bool ApplyBattleTalkFilter(byte* senderString, byte* talkString, TalkType type) {
+    private bool ApplyBattleTalkFilter(string sender, string talk, TalkType type) {
         var shouldBlock = false;
 
         try {
-            var sender = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(senderString)).TextValue;
-            var talk   = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(talkString)).TextValue;
-
             var (pattern, handled, showMessage) = FindBattleTalkMatch(talk, Plugin.Config.BattleTalkPatterns);
             var history = new BattleTalkHistoryEntry(sender, talk, DateTime.UtcNow, handled, pattern);
             History.AddBattleTalkHistory(history);
@@ -124,7 +122,7 @@ public sealed class Filter : IDisposable {
         isHandled = handled == HandledType.Blocked;
     }
 
-    private unsafe void ShowTextGimmickHint(RaptureAtkModule* self, byte* text, RaptureAtkModule.TextGimmickHintStyle style, int duration) {
+    private unsafe void ShowTextGimmickHint(RaptureAtkModule* self, CStringPointer text, RaptureAtkModule.TextGimmickHintStyle style, int duration) {
         var message = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(text)).TextValue;
 
         var (pattern, handled) = FindPatternMatch(message, Plugin.Config.GimmickPatterns);
