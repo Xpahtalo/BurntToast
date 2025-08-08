@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace BurntToast;
 
@@ -32,7 +32,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         if (!toastTab) { return; }
 
         ImGui.PushTextWrapPos();
-        ImGui.TextUnformatted("Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
+        ImGui.Text("Add regular expressions to filter below. Any toast matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
 
         if (ImGui.Button("Add")) { Plugin.Config.AddToastPattern(""); }
@@ -56,7 +56,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
                 try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
                     using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
-                    ImGui.TextUnformatted("Invalid regular expression.");
+                    ImGui.Text("Invalid regular expression.");
                 }
 
                 if (regex is not null) {
@@ -81,7 +81,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         if (!battleTalkTab) { return; }
 
         ImGui.PushTextWrapPos();
-        ImGui.TextUnformatted("Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
+        ImGui.Text("Add regular expressions to filter below. Any battle talk matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
 
         if (ImGui.Button("Add")) { Plugin.Config.AddBattleTalkPattern("", true); }
@@ -105,7 +105,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
                 try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
                     using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
-                    ImGui.TextUnformatted("Invalid regular expression.");
+                    ImGui.Text("Invalid regular expression.");
                 }
 
                 if (regex is not null) {
@@ -137,7 +137,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
         if (!gimmickTab) { return; }
 
         ImGui.PushTextWrapPos();
-        ImGui.TextUnformatted("Add regular expressions to filter below. Any gimmick matching a regular expression on the list will be hidden.");
+        ImGui.Text("Add regular expressions to filter below. Any gimmick matching a regular expression on the list will be hidden.");
         ImGui.PopTextWrapPos();
 
         if (ImGui.Button("Add")) { Plugin.Config.AddGimmickPattern(""); }
@@ -161,7 +161,7 @@ public sealed class SettingsUi(BurntToast plugin) : Window("BurntToast Settings"
 
                 try { regex = new Regex(patternText, RegexOptions.Compiled); } catch (ArgumentException) {
                     using var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1f, 0f, 0f, 1f));
-                    ImGui.TextUnformatted("Invalid regular expression.");
+                    ImGui.Text("Invalid regular expression.");
                 }
 
                 if (regex is not null) {
@@ -201,7 +201,7 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
     public override void Draw() {
         ImGui.PushTextWrapPos();
-        ImGui.TextUnformatted("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
+        ImGui.Text("Mouse over a toast for details. CTRL+Click to add a Regex for it.");
 
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
@@ -316,7 +316,7 @@ public sealed class HistoryUi(BurntToast plugin, History history) : Window("Toas
 
         if (ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
-            ImGui.TextUnformatted(tooltip);
+            ImGui.Text(tooltip);
             ImGui.EndTooltip();
         }
         return clicked;

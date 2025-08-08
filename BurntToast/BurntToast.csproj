@@ -1,9 +1,9 @@
-<Project Sdk="Dalamud.NET.Sdk/12.0.2">
+<Project Sdk="Dalamud.NET.Sdk/13.0.0">
     <PropertyGroup>
         <RootNamespace>BurntToast</RootNamespace>
         <AssemblyName>BurntToast</AssemblyName>
         <Nullable>enable</Nullable>
-        <Version>1.4.1</Version>
+        <Version>1.4.2</Version>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
