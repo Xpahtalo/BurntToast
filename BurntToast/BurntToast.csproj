@@ -3,7 +3,7 @@
         <RootNamespace>BurntToast</RootNamespace>
         <AssemblyName>BurntToast</AssemblyName>
         <Nullable>enable</Nullable>
-        <Version>1.4.2</Version>
+        <Version>1.4.3</Version>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
