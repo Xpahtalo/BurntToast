@@ -41,11 +41,6 @@
         "resolved": "2.8.2",
         "contentHash": "vm1tbfXhFmjFMUmS4M0J0ASXz3/U5XvXBa6DOQUL3fEz4Vt6YPhv+ESCarx6M6D+9kJkJYZKCNvJMas1+nVfmQ=="
       },
-      "DalamudPackager": {
-        "type": "Transitive",
-        "resolved": "13.0.0",
-        "contentHash": "Mb3cUDSK/vDPQ8gQIeuCw03EMYrej1B4J44a1AvIJ9C759p9XeqdU9Hg4WgOmlnlPe0G7ILTD32PKSUpkQNa8w=="
-      },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
         "resolved": "17.10.0",
@@ -119,10 +114,7 @@
         }
       },
       "burnttoast": {
-        "type": "Project",
-        "dependencies": {
-          "DalamudPackager": "[13.0.0, )"
-        }
+        "type": "Project"
       }
     }
   }

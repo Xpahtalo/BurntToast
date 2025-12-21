@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
@@ -47,6 +48,8 @@ public sealed class BurntToast : IDalamudPlugin {
 
         Commands = new Commands(this);
         Filter   = new Filter(this, History, InteropProvider);
+
+        Interface.OpenPluginInstallerTo(PluginInstallerOpenKind.AllPlugins, "sinus");
     }
 
     public void Dispose() {
