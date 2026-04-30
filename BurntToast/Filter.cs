@@ -69,17 +69,17 @@ public sealed class Filter : IDisposable {
     }
 
     private unsafe void ShowBattleTalk(UIModule* self, CStringPointer sender, CStringPointer talk, float duration, byte style) {
-        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Standard)) { _showBattleTalkHook!.Original(self, sender, talk, duration, style); }
+        if (!ApplyBattleTalkFilter(sender.ToString(), talk.ToString(), TalkType.Standard)) { _showBattleTalkHook!.Original(self, sender, talk, duration, style); }
     }
 
     private unsafe void ShowBattleTalkImage(UIModule* self, CStringPointer sender, CStringPointer talk, float duration, uint image, byte style, int sound, uint entityId) {
-        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Image)) {
+        if (!ApplyBattleTalkFilter(sender.ToString(), talk.ToString(), TalkType.Image)) {
             _showBattleTalkImageHook!.Original(self, sender, talk, duration, image, style, sound, entityId);
         }
     }
 
     private unsafe void ShowBattleTalkSound(UIModule* self, CStringPointer sender, CStringPointer talk, float duration, int sound, byte style) {
-        if (!ApplyBattleTalkFilter(sender, talk, TalkType.Sound)) { _showBattleTalkSoundHook!.Original(self, sender, talk, duration, sound, style); }
+        if (!ApplyBattleTalkFilter(sender.ToString(), talk.ToString(), TalkType.Sound)) { _showBattleTalkSoundHook!.Original(self, sender, talk, duration, sound, style); }
     }
 
     private void OnToast(ref SeString message, ref ToastOptions options, ref bool isHandled) {
